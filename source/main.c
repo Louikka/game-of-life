@@ -3,11 +3,16 @@
 
 #include "raylib.h"
 
+#include "timer.h"
+
 
 #define CELL_SIZE 10
 
 #define CELLS_IN_GRID_WIDHT 90
 #define CELLS_IN_GRID_HEIGHT 60
+
+#define ROWS_IN_GRID CELLS_IN_GRID_WIDHT
+#define COLS_IN_GRID CELLS_IN_GRID_HEIGHT
 
 
 /**
@@ -21,30 +26,34 @@ typedef enum __cell_state
 } CellState;
 
 
+void UpdateNextGrid(CellState curr[COLS_IN_GRID][ROWS_IN_GRID], CellState next[COLS_IN_GRID][ROWS_IN_GRID]);
+
+
 int main(void)
 {
     const unsigned int SCREEN_WIDTH = CELLS_IN_GRID_WIDHT * CELL_SIZE;
     const unsigned int SCREEN_HEIGHT = CELLS_IN_GRID_HEIGHT * CELL_SIZE;
 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Conway's Game of Life");
-    SetTargetFPS(10);
+    SetTargetFPS(30);
 
 
 
     /**
      * Current generation grid (`[ rows ]` `[ columns ]`).
      */
-    CellState currGenGrid[CELLS_IN_GRID_HEIGHT][CELLS_IN_GRID_WIDHT] = { DEAD };
+    CellState currGenGrid[COLS_IN_GRID][ROWS_IN_GRID] = { DEAD };
     /**
      * Next generation grid (`[ rows ]` `[ columns ]`).
      */
-    CellState nextGenGrid[CELLS_IN_GRID_HEIGHT][CELLS_IN_GRID_WIDHT] = { DEAD };
-
-    const int __grid_max_row = CELLS_IN_GRID_HEIGHT - 1;
-    const int __grid_max_col = CELLS_IN_GRID_WIDHT - 1;
+    CellState nextGenGrid[COLS_IN_GRID][ROWS_IN_GRID] = { DEAD };
 
 
     bool isGameRunning = false;
+
+    const float GAME_SPEED = 0.1f; // seconds beetween each generation
+    Timer GameTimer = { 0 };
+
     unsigned int noOfGenerations = 1;
 
     // for test purposes
@@ -68,7 +77,20 @@ int main(void)
 
     while (!WindowShouldClose())
     {
-        if (IsKeyPressed(KEY_SPACE)) isGameRunning = !isGameRunning;
+        if (IsKeyPressed(KEY_SPACE))
+        {
+            if (isGameRunning)
+            {
+                isGameRunning = false;
+            }
+            else
+            {
+                isGameRunning = true;
+                StartTimer(&GameTimer, GAME_SPEED);
+            }
+        }
+
+        UpdateTimer(&GameTimer);
 
         BeginDrawing();
 
@@ -77,12 +99,11 @@ int main(void)
             DrawText(TextFormat("Generation %u", noOfGenerations), 10, 10, 20, RAYWHITE);
             DrawText("Press SPACE to play/pause game", 10, 35, 10, RAYWHITE);
 
-
-            for (int row = 0; row < CELLS_IN_GRID_HEIGHT; row++)
+            // draw cells of current grid
+            for (int row = 0; row < ROWS_IN_GRID; row++)
             {
-                for (int col = 0; col < CELLS_IN_GRID_WIDHT; col++)
+                for (int col = 0; col < COLS_IN_GRID; col++)
                 {
-                    // draw cell of current grid
                     if (currGenGrid[row][col] == ALIVE)
                     {
                         DrawRectangle(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE, WHITE);
@@ -90,62 +111,74 @@ int main(void)
                 }
             }
 
+
+            if (isGameRunning && IsTimerDone(&GameTimer))
+            {
+                UpdateNextGrid(currGenGrid, nextGenGrid);
+
+                noOfGenerations++;
+
+                StartTimer(&GameTimer, GAME_SPEED);
+            }
+
         EndDrawing();
-
-
-        if (isGameRunning)
-        {
-            // update cell of next grid
-            for (int row = 0; row < CELLS_IN_GRID_HEIGHT; row++)
-            {
-                for (int col = 0; col < CELLS_IN_GRID_WIDHT; col++)
-                {
-                    unsigned char noOfNeighbours = 0;
-
-                    if (row > 1              && col > 1              && currGenGrid[row - 1][col - 1] == ALIVE) noOfNeighbours++;
-                    if (row > 1                                      && currGenGrid[row - 1][col]     == ALIVE) noOfNeighbours++;
-                    if (row > 1              && col < __grid_max_col && currGenGrid[row - 1][col + 1] == ALIVE) noOfNeighbours++;
-                    if (                        col > 1              && currGenGrid[row]    [col - 1] == ALIVE) noOfNeighbours++;
-                    if (                        col < __grid_max_col && currGenGrid[row]    [col + 1] == ALIVE) noOfNeighbours++;
-                    if (row < __grid_max_row && col > 1              && currGenGrid[row + 1][col - 1] == ALIVE) noOfNeighbours++;
-                    if (row < __grid_max_row                         && currGenGrid[row + 1][col]     == ALIVE) noOfNeighbours++;
-                    if (row < __grid_max_row && col < __grid_max_col && currGenGrid[row + 1][col + 1] == ALIVE) noOfNeighbours++;
-
-                    if (currGenGrid[row][col] == DEAD && noOfNeighbours == 3)
-                    {
-                        nextGenGrid[row][col] = ALIVE;
-                    }
-                    else if (currGenGrid[row][col] == ALIVE && (noOfNeighbours == 2 || noOfNeighbours == 3))
-                    {
-                        nextGenGrid[row][col] = ALIVE;
-                    }
-                    else if (currGenGrid[row][col] == ALIVE && (noOfNeighbours < 2 || noOfNeighbours > 3))
-                    {
-                        nextGenGrid[row][col] = DEAD;
-                    }
-                    else
-                    {
-                        nextGenGrid[row][col] = DEAD;
-                    }
-                }
-            }
-
-            // copy next generation grid to the current grid
-            for (int i = 0; i < CELLS_IN_GRID_HEIGHT; i++)
-            {
-                for (int j = 0; j < CELLS_IN_GRID_WIDHT; j++)
-                {
-                    currGenGrid[i][j] = nextGenGrid[i][j];
-                    nextGenGrid[i][j] = DEAD;
-                }
-            }
-
-            noOfGenerations++;
-        }
     }
 
 
     CloseWindow();
 
     return 0;
+}
+
+
+
+void UpdateNextGrid(CellState curr[COLS_IN_GRID][ROWS_IN_GRID], CellState next[COLS_IN_GRID][ROWS_IN_GRID])
+{
+    const unsigned int __gridMaxRow = ROWS_IN_GRID - 1;
+    const unsigned int __gridMaxCol = COLS_IN_GRID - 1;
+
+    for (int row = 0; row < ROWS_IN_GRID; row++)
+    {
+        for (int col = 0; col < COLS_IN_GRID; col++)
+        {
+            // update cell of next grid
+            unsigned char noOfNeighbours = 0;
+
+            if (row > 1            && col > 1            && curr[row - 1][col - 1] == ALIVE) noOfNeighbours++;
+            if (row > 1                                  && curr[row - 1][col]     == ALIVE) noOfNeighbours++;
+            if (row > 1            && col < __gridMaxCol && curr[row - 1][col + 1] == ALIVE) noOfNeighbours++;
+            if (                      col > 1            && curr[row]    [col - 1] == ALIVE) noOfNeighbours++;
+            if (                      col < __gridMaxCol && curr[row]    [col + 1] == ALIVE) noOfNeighbours++;
+            if (row < __gridMaxRow && col > 1            && curr[row + 1][col - 1] == ALIVE) noOfNeighbours++;
+            if (row < __gridMaxRow                       && curr[row + 1][col]     == ALIVE) noOfNeighbours++;
+            if (row < __gridMaxRow && col < __gridMaxCol && curr[row + 1][col + 1] == ALIVE) noOfNeighbours++;
+
+            if (curr[row][col] == DEAD && noOfNeighbours == 3)
+            {
+                next[row][col] = ALIVE;
+            }
+            else if (curr[row][col] == ALIVE && (noOfNeighbours == 2 || noOfNeighbours == 3))
+            {
+                next[row][col] = ALIVE;
+            }
+            else if (curr[row][col] == ALIVE && (noOfNeighbours < 2 || noOfNeighbours > 3))
+            {
+                next[row][col] = DEAD;
+            }
+            else
+            {
+                next[row][col] = DEAD;
+            }
+        }
+    }
+
+    // copy next generation grid to the current grid
+    for (int i = 0; i < CELLS_IN_GRID_HEIGHT; i++)
+    {
+        for (int j = 0; j < CELLS_IN_GRID_WIDHT; j++)
+        {
+            curr[i][j] = next[i][j];
+            next[i][j] = DEAD;
+        }
+    }
 }
