@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "raylib.h"
 
@@ -8,30 +9,29 @@
 
 #define CELL_SIZE 10
 
-#define CELLS_IN_GRID_WIDHT 90
+#define CELLS_IN_GRID_WIDTH 90
 #define CELLS_IN_GRID_HEIGHT 60
 
-#define ROWS_IN_GRID CELLS_IN_GRID_WIDHT
-#define COLS_IN_GRID CELLS_IN_GRID_HEIGHT
+#define ROWS_IN_GRID CELLS_IN_GRID_HEIGHT
+#define COLS_IN_GRID CELLS_IN_GRID_WIDTH
 
 
 /**
  * `DEAD = 0`
  * `ALIVE = 1`
  */
-typedef enum __cell_state
-{
+typedef enum __cell_state {
     DEAD,
     ALIVE,
 } CellState;
 
 
-void UpdateNextGrid(CellState curr[COLS_IN_GRID][ROWS_IN_GRID], CellState next[COLS_IN_GRID][ROWS_IN_GRID]);
+void UpdateNextGrid(CellState curr[ROWS_IN_GRID][COLS_IN_GRID], CellState next[ROWS_IN_GRID][COLS_IN_GRID]);
 
 
 int main(void)
 {
-    const unsigned int SCREEN_WIDTH = CELLS_IN_GRID_WIDHT * CELL_SIZE;
+    const unsigned int SCREEN_WIDTH = CELLS_IN_GRID_WIDTH * CELL_SIZE;
     const unsigned int SCREEN_HEIGHT = CELLS_IN_GRID_HEIGHT * CELL_SIZE;
 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Conway's Game of Life");
@@ -42,11 +42,11 @@ int main(void)
     /**
      * Current generation grid (`[ rows ]` `[ columns ]`).
      */
-    CellState currGenGrid[COLS_IN_GRID][ROWS_IN_GRID] = { DEAD };
+    CellState currGenGrid[ROWS_IN_GRID][COLS_IN_GRID] = { DEAD };
     /**
      * Next generation grid (`[ rows ]` `[ columns ]`).
      */
-    CellState nextGenGrid[COLS_IN_GRID][ROWS_IN_GRID] = { DEAD };
+    CellState nextGenGrid[ROWS_IN_GRID][COLS_IN_GRID] = { DEAD };
 
 
     bool isGameRunning = false;
@@ -55,24 +55,6 @@ int main(void)
     Timer GameTimer = { 0 };
 
     unsigned int noOfGenerations = 1;
-
-    // for test purposes
-    currGenGrid[5][6] = ALIVE;
-    currGenGrid[6][7] = ALIVE;
-    currGenGrid[7][5] = ALIVE;
-    currGenGrid[7][6] = ALIVE;
-    currGenGrid[7][7] = ALIVE;
-
-    currGenGrid[20][20] = ALIVE;
-    currGenGrid[20][21] = ALIVE;
-    currGenGrid[20][22] = ALIVE;
-
-    currGenGrid[30][45] = ALIVE;
-    currGenGrid[30][46] = ALIVE;
-    currGenGrid[30][47] = ALIVE;
-    currGenGrid[30][48] = ALIVE;
-    currGenGrid[30][49] = ALIVE;
-    currGenGrid[30][50] = ALIVE;
 
 
     while (!WindowShouldClose())
@@ -92,6 +74,27 @@ int main(void)
 
         UpdateTimer(&GameTimer);
 
+
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        {
+            Vector2 mousePosition = GetMousePosition();
+
+            size_t __row = (int) mousePosition.y / CELL_SIZE;
+            size_t __col = (int) mousePosition.x / CELL_SIZE;
+
+            CellState cellUnderMouse = currGenGrid[__row][__col];
+
+            if (cellUnderMouse == ALIVE)
+            {
+                currGenGrid[__row][__col] = DEAD;
+            }
+            else
+            {
+                currGenGrid[__row][__col] = ALIVE;
+            }
+        }
+
+
         BeginDrawing();
 
             ClearBackground(BLACK);
@@ -100,9 +103,9 @@ int main(void)
             DrawText("Press SPACE to play/pause game", 10, 35, 10, RAYWHITE);
 
             // draw cells of current grid
-            for (int row = 0; row < ROWS_IN_GRID; row++)
+            for (size_t row = 0; row < ROWS_IN_GRID; row++)
             {
-                for (int col = 0; col < COLS_IN_GRID; col++)
+                for (size_t col = 0; col < COLS_IN_GRID; col++)
                 {
                     if (currGenGrid[row][col] == ALIVE)
                     {
@@ -132,14 +135,14 @@ int main(void)
 
 
 
-void UpdateNextGrid(CellState curr[COLS_IN_GRID][ROWS_IN_GRID], CellState next[COLS_IN_GRID][ROWS_IN_GRID])
+void UpdateNextGrid(CellState curr[ROWS_IN_GRID][COLS_IN_GRID], CellState next[ROWS_IN_GRID][COLS_IN_GRID])
 {
-    const unsigned int __gridMaxRow = ROWS_IN_GRID - 1;
-    const unsigned int __gridMaxCol = COLS_IN_GRID - 1;
+    const size_t __gridMaxRow = ROWS_IN_GRID - 1;
+    const size_t __gridMaxCol = COLS_IN_GRID - 1;
 
-    for (int row = 0; row < ROWS_IN_GRID; row++)
+    for (size_t row = 0; row < ROWS_IN_GRID; row++)
     {
-        for (int col = 0; col < COLS_IN_GRID; col++)
+        for (size_t col = 0; col < COLS_IN_GRID; col++)
         {
             // update cell of next grid
             unsigned char noOfNeighbours = 0;
@@ -173,9 +176,9 @@ void UpdateNextGrid(CellState curr[COLS_IN_GRID][ROWS_IN_GRID], CellState next[C
     }
 
     // copy next generation grid to the current grid
-    for (int i = 0; i < CELLS_IN_GRID_HEIGHT; i++)
+    for (size_t i = 0; i < CELLS_IN_GRID_HEIGHT; i++)
     {
-        for (int j = 0; j < CELLS_IN_GRID_WIDHT; j++)
+        for (size_t j = 0; j < CELLS_IN_GRID_WIDTH; j++)
         {
             curr[i][j] = next[i][j];
             next[i][j] = DEAD;
