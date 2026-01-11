@@ -6,12 +6,6 @@
 #include "timer.h"
 
 
-typedef struct __timer
-{
-    float currentTime;
-} Timer;
-
-
 void StartTimer(Timer * timer, float time)
 {
     timer->currentTime = time;

@@ -1,8 +1,7 @@
 #include "raylib.h"
 
 
-typedef struct __timer
-{
+typedef struct {
     float currentTime;
 } Timer;
 
