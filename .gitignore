@@ -2,3 +2,4 @@
 *.ini
 
 out/
+/.vscode
