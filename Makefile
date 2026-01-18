@@ -1,23 +1,22 @@
-SRC_DIR := source
 OUT_DIR := out
 
-RAYLIB_DIR := $(SRC_DIR)/raylib-5.5
 
-SOURCE_FILES := $(SRC_DIR)/main.c $(SRC_DIR)/timer.c
-
-
-.PHONY : build make_dir_if clean
-
+build : compile copy_SDL_dll
 
 # add `-mwindows` flag to disable console
-
-build : make_dir_if
-	gcc $(SOURCE_FILES) \
+compile : make_out_dir
+	gcc main.c \
 	-o $(OUT_DIR)/game.exe \
-	-I $(RAYLIB_DIR)/include  -L $(RAYLIB_DIR)/lib  -lraylib \
-	-lgdi32 -lwinmm -mwindows \
+	-I ./SDL/x86_64-w64-mingw32/include/ \
+	-L ./SDL/x86_64-w64-mingw32/lib/  -lSDL3 \
+	-mwindows \
 	-O2 -s
 
+copy_SDL_dll : make_out_dir
+	if not exist $(OUT_DIR)/SDL3.dll cp "./SDL/x86_64-w64-mingw32/bin/SDL3.dll" "$(OUT_DIR)/"
 
-make_dir_if :
+make_out_dir :
 	if not exist "$(OUT_DIR)" mkdir "$(OUT_DIR)"
+
+
+.PHONY : build compile copy_SDL_dll make_out_dir clean
