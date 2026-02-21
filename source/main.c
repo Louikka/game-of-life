@@ -4,16 +4,24 @@
 
 #include <SDL3/SDL.h>
 
+/* https://github.com/rxi/vec */
+#include "rxi/vec-0.2.1/src/vec.h"
+#include "vec.h"
+
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
+
 
 /** In seconds. */
 #define GENERATION_LIVE_TIME 0.1f
 
 
-/** In pixels. */
 #define CELL_SIZE 10
+
+#define WORLD_SIZE_WIDTH (1000*CELL_SIZE)
+#define WORLD_SIZE_HEIGHT (1000*CELL_SIZE)
+
 
 #define CELLS_IN_GRID_WIDTH 80 // SCREEN_WIDTH / CELL_SIZE
 #define CELLS_IN_GRID_HEIGHT 60 // SCREEN_HEIGHT / CELL_SIZE
@@ -28,10 +36,18 @@
 #define GRID_MAX_COL ((COLS_PER_ROW)-1)
 
 
-typedef enum CellState {
+typedef enum {
     DEAD,
     ALIVE,
 } CellState;
+
+
+/** Translates coordinates (SDL_Point) from viewport to window. */
+SDL_Point TranslateViewportCoordinates(SDL_Point point)
+{
+    SDL_Point p = { .x = 0, .y = 0, };
+    return p;
+}
 
 
 void SetGridCellState(CellState *grid, int row, int col, CellState state)
@@ -116,12 +132,13 @@ int main(void)
 
 
     bool isAppRunning = true;
-    bool isGameRunning = false;
 
     float timer = 0;
     Uint64 lastFrameTime = SDL_GetTicksNS();
 
     printf("SDL_GetTicksNS() before main loop : %" PRIu64 ".\n", lastFrameTime);
+
+    bool isGamePaused = true;
 
     while (isAppRunning)
     {
@@ -162,16 +179,17 @@ int main(void)
 
                 case SDL_EVENT_KEY_DOWN:
                 {
+                    /* Space button press - run/pause simulation. */
                     if (event.key.key == SDLK_SPACE && !event.key.repeat)
                     {
-                        if (isGameRunning)
+                        if (isGamePaused)
                         {
-                            isGameRunning = false;
+                            isGamePaused = false;
+                            timer = 0;
                         }
                         else
                         {
-                            isGameRunning = true;
-                            timer = 0;
+                            isGamePaused = true;
                         }
                     }
                     break;
@@ -198,7 +216,7 @@ int main(void)
             {
                 if (IsCellAlive(gridCurrentGen, row, col))
                 {
-                    SDL_FRect rect = { col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE };
+                    SDL_Rect rect = { col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE };
                     SDL_RenderFillRect(renderer, &rect);
                 }
             }
@@ -206,7 +224,7 @@ int main(void)
 
         SDL_RenderPresent(renderer);
 
-        if (isGameRunning && timer > GENERATION_LIVE_TIME)
+        if (!isGamePaused && timer > GENERATION_LIVE_TIME)
         {
             UpdateGrid(gridCurrentGen, gridNextGen);
             noOfGenerations++;
