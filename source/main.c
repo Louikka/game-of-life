@@ -6,7 +6,6 @@
 
 /* https://github.com/rxi/vec */
 #include "rxi/vec-0.2.1/src/vec.h"
-#include "vec.h"
 
 
 #define SCREEN_WIDTH 800
@@ -19,81 +18,97 @@
 
 #define CELL_SIZE 10
 
-#define WORLD_SIZE_WIDTH (1000*CELL_SIZE)
-#define WORLD_SIZE_HEIGHT (1000*CELL_SIZE)
 
 
-#define CELLS_IN_GRID_WIDTH 80 // SCREEN_WIDTH / CELL_SIZE
-#define CELLS_IN_GRID_HEIGHT 60 // SCREEN_HEIGHT / CELL_SIZE
-#define TOTAL_CELLS_IN_GRID ((CELLS_IN_GRID_WIDTH)*(CELLS_IN_GRID_HEIGHT))
-
-/** Alias for `CELLS_IN_GRID_HEIGHT`. */
-#define ROWS_IN_GRID CELLS_IN_GRID_HEIGHT
-/** Alias for `CELLS_IN_GRID_WIDTH`. */
-#define COLS_PER_ROW CELLS_IN_GRID_WIDTH
-
-#define GRID_MAX_ROW ((ROWS_IN_GRID)-1)
-#define GRID_MAX_COL ((COLS_PER_ROW)-1)
+typedef struct {
+    float active;
+    Uint64 sinceLastFrame;
+} Timer;
 
 
-typedef enum {
-    DEAD,
-    ALIVE,
-} CellState;
+
+#define DEAD 0
+#define ALIVE 1
+
+typedef int CellState;
 
 
-/** Translates coordinates (SDL_Point) from viewport to window. */
-SDL_Point TranslateViewportCoordinates(SDL_Point point)
+
+typedef SDL_Point CellCoordinates;
+typedef vec_t(SDL_Point) sdl_p_vec_t; // https://github.com/rxi/vec?tab=readme-ov-file#types
+
+/** Translates cell's absolute coordinates to relative (to viewport position). */
+SDL_Point GetCellRelCoordinates(SDL_Point viewport, SDL_Point cell)
 {
-    SDL_Point p = { .x = 0, .y = 0, };
-    return p;
+    return (SDL_Point){
+        .x = cell.x - viewport.x,
+        .y = cell.y - viewport.y,
+    };
+}
+
+/** Translates cell's relative coordinates to absolute. */
+SDL_Point GetCellAbsCoordinates(SDL_Point viewport, SDL_Point cell)
+{
+    return (SDL_Point){
+        .x = cell.x + viewport.x,
+        .y = cell.y + viewport.y,
+    };
 }
 
 
-void SetGridCellState(CellState *grid, int row, int col, CellState state)
+/** Returns index of the element (`Cell`) in vector or -1 if no such cell present. */
+int __GetCellIndex(sdl_p_vec_t grid, SDL_Point cell)
 {
-    CellState *cell = grid + (COLS_PER_ROW * row) + col;
-    *cell = state;
-}
-
-bool IsCellAlive(CellState *grid, int row, int col)
-{
-    CellState cell = *(grid + (COLS_PER_ROW * row) + col);
-    return cell == ALIVE;
-}
-
-
-void UpdateGrid(CellState *current, CellState *next)
-{
-    for (int row = 0; row < ROWS_IN_GRID; row++)
+    for (int i = 0; i < grid.length; i++)
     {
-        for (int col = 0; col < COLS_PER_ROW; col++)
+        if (grid.data[i].x == cell.x && grid.data[i].y == cell.y)
         {
-            unsigned char noOfNeighbours = 0;
-
-            if (row > 0            && col > 0            && IsCellAlive(current, row - 1, col - 1)) noOfNeighbours++;
-            if (row > 0                                  && IsCellAlive(current, row - 1, col)    ) noOfNeighbours++;
-            if (row > 0            && col < GRID_MAX_COL && IsCellAlive(current, row - 1, col + 1)) noOfNeighbours++;
-            if (                      col > 0            && IsCellAlive(current, row,     col - 1)) noOfNeighbours++;
-            if (                      col < GRID_MAX_COL && IsCellAlive(current, row,     col + 1)) noOfNeighbours++;
-            if (row < GRID_MAX_ROW && col > 0            && IsCellAlive(current, row + 1, col - 1)) noOfNeighbours++;
-            if (row < GRID_MAX_ROW                       && IsCellAlive(current, row + 1, col)    ) noOfNeighbours++;
-            if (row < GRID_MAX_ROW && col < GRID_MAX_COL && IsCellAlive(current, row + 1, col + 1)) noOfNeighbours++;
-
-            if (
-                (!IsCellAlive(current, row, col) && noOfNeighbours == 3) ||
-                (IsCellAlive(current, row, col) && (noOfNeighbours == 2 || noOfNeighbours == 3))
-            )
-            {
-                SetGridCellState(next, row, col, ALIVE);
-            }
-            else
-            {
-                SetGridCellState(next, row, col, DEAD);
-            }
+            return i;
         }
     }
 
+    return -1;
+}
+
+bool IsCellAlive(sdl_p_vec_t grid, SDL_Point cell)
+{
+    for (int i = 0; i < grid.length; i++)
+    {
+        if (grid.data[i].x == cell.x && grid.data[i].y == cell.y)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+void UpdateGrid(sdl_p_vec_t *current, sdl_p_vec_t *next)
+{
+    for (int i = 0; i < current->length; i++)
+    {
+        unsigned char noOfNeighbours = 0;
+
+        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x - 1, current->data[i].y + 1, })) noOfNeighbours++;
+        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x,     current->data[i].y + 1, })) noOfNeighbours++;
+        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x + 1, current->data[i].y + 1, })) noOfNeighbours++;
+        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x - 1, current->data[i].y,     })) noOfNeighbours++;
+        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x + 1, current->data[i].y,     })) noOfNeighbours++;
+        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x - 1, current->data[i].y, - 1 })) noOfNeighbours++;
+        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x,     current->data[i].y, - 1 })) noOfNeighbours++;
+        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x + 1, current->data[i].y, - 1 })) noOfNeighbours++;
+
+        if (noOfNeighbours < 2 || noOfNeighbours > 3)
+        {
+            // deadge
+        }
+        // else if cell is dead and noOfNeighbours == 3
+            // alivge
+        //
+    }
+
+    /*
     // copy next generation grid to the current grid
     for (int i = 0; i < CELLS_IN_GRID_HEIGHT; i++)
     {
@@ -103,17 +118,11 @@ void UpdateGrid(CellState *current, CellState *next)
             SetGridCellState(next, i, j, DEAD);
         }
     }
+    */
 }
-
 
 int main(void)
 {
-    CellState gridCurrentGen[TOTAL_CELLS_IN_GRID] = { DEAD };
-    CellState gridNextGen[TOTAL_CELLS_IN_GRID] = { DEAD };
-
-    unsigned int noOfGenerations = 0;
-
-
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
         printf("Something went wrong while initializing SDL window : %s.\n", SDL_GetError());
@@ -131,16 +140,31 @@ int main(void)
     }
 
 
-    bool isAppRunning = true;
+    bool isMainLoopActive = true;
 
-    float timer = 0;
-    Uint64 lastFrameTime = SDL_GetTicksNS();
+    Timer timer = {
+        .active = 0,
+        .sinceLastFrame = SDL_GetTicksNS(),
+    };
 
-    printf("SDL_GetTicksNS() before main loop : %" PRIu64 ".\n", lastFrameTime);
+    SDL_Point viewportCoordinates = {
+        .x = 0,
+        .y = 0,
+    };
+
 
     bool isGamePaused = true;
 
-    while (isAppRunning)
+    sdl_p_vec_t gridCurrentGen;
+    vec_init(&gridCurrentGen);
+
+    sdl_p_vec_t gridNextGen;
+    vec_init(&gridNextGen);
+
+    int totalGenerations = 0;
+
+
+    while (isMainLoopActive)
     {
         SDL_Event event;
 
@@ -150,7 +174,7 @@ int main(void)
             {
                 case SDL_EVENT_QUIT:
                 {
-                    isAppRunning = false;
+                    isMainLoopActive = false;
                     break;
                 }
 
@@ -158,21 +182,36 @@ int main(void)
                 {
                     if (event.button.down)
                     {
-                        int rowUnderMouse = (int)(event.button.y / CELL_SIZE);
-                        int colUnderMouse = (int)(event.button.x / CELL_SIZE);
+                        int mousePosX = (int)(event.button.x / CELL_SIZE);
+                        int mousePosY = (int)(event.button.y / CELL_SIZE);
 
-                        printf(
-                            "Mouse click detected at (%f, %f). Changing cell at (%i, %i).\n",
-                            event.button.x, event.button.y,
-                            rowUnderMouse, colUnderMouse
-                        );
+                        if (event.button.button == SDL_BUTTON_RIGHT)
+                        {
+                            printf("Right mouse click detected at (%d, %d).\n", (int)event.button.x, (int)event.button.y);
+                        }
+                        else if (event.button.button == SDL_BUTTON_LEFT)
+                        {
+                            printf("Left mouse click detected at (%d, %d).\n", (int)event.button.x, (int)event.button.y);
 
-                        SetGridCellState(
-                            gridCurrentGen,
-                            rowUnderMouse,
-                            colUnderMouse,
-                            IsCellAlive(gridCurrentGen, rowUnderMouse, colUnderMouse) ? DEAD : ALIVE
-                        );
+                            SDL_Point __cellAbsPos = GetCellAbsCoordinates(
+                                viewportCoordinates,
+                                (SDL_Point){ .x = mousePosX, .y = mousePosY, }
+                            );
+
+                            if (IsCellAlive(gridCurrentGen, __cellAbsPos))
+                            {
+                                int i = __GetCellIndex(gridCurrentGen, __cellAbsPos);
+                                vec_splice(&gridCurrentGen, i, 1);
+                            }
+                            else
+                            {
+                                int success = vec_push(&gridCurrentGen, (__cellAbsPos));
+                                if (success == -1)
+                                {
+                                    printf("Cannot push new element to a vector.\n");
+                                }
+                            }
+                        }
                     }
                     break;
                 }
@@ -185,7 +224,7 @@ int main(void)
                         if (isGamePaused)
                         {
                             isGamePaused = false;
-                            timer = 0;
+                            timer.active = 0;
                         }
                         else
                         {
@@ -199,10 +238,9 @@ int main(void)
 
 
         Uint64 currentFrameTime = SDL_GetTicksNS();
-        float delta = (float)(currentFrameTime - lastFrameTime) / (float)SDL_NS_PER_SECOND;
-        lastFrameTime = currentFrameTime;
-
-        timer += delta;
+        float delta = (float)(currentFrameTime - timer.sinceLastFrame) / (float)SDL_NS_PER_SECOND;
+        timer.sinceLastFrame = currentFrameTime;
+        timer.active += delta;
 
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
@@ -210,33 +248,33 @@ int main(void)
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
-        for (int row = 0; row < ROWS_IN_GRID; row++)
+        for (int i = 0; i < gridCurrentGen.length; i++)
         {
-            for (int col = 0; col < COLS_PER_ROW; col++)
-            {
-                if (IsCellAlive(gridCurrentGen, row, col))
-                {
-                    SDL_Rect rect = { col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE };
-                    SDL_RenderFillRect(renderer, &rect);
-                }
-            }
+            SDL_FRect rect = {
+                .x = gridCurrentGen.data[i].x * CELL_SIZE,
+                .y = gridCurrentGen.data[i].y * CELL_SIZE,
+                .w = CELL_SIZE,
+                .h = CELL_SIZE,
+            };
+            SDL_RenderFillRect(renderer, &rect);
         }
 
         SDL_RenderPresent(renderer);
 
-        if (!isGamePaused && timer > GENERATION_LIVE_TIME)
+        if (!isGamePaused && timer.active > GENERATION_LIVE_TIME)
         {
-            UpdateGrid(gridCurrentGen, gridNextGen);
-            noOfGenerations++;
+            //UpdateGrid(gridCurrentGen, gridNextGen);
+            totalGenerations++;
 
-            printf("Generation %u, time elapsed since last : %fs.\n", noOfGenerations, timer);
-
-            timer = 0;
+            timer.active = 0;
         }
 
 
         SDL_Delay(50); // approx. 20fps
     }
+
+    vec_deinit(&gridCurrentGen);
+    vec_deinit(&gridNextGen);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
