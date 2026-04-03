@@ -35,7 +35,7 @@ typedef int CellState;
 
 
 typedef SDL_Point CellCoordinates;
-typedef vec_t(SDL_Point) sdl_p_vec_t; // https://github.com/rxi/vec?tab=readme-ov-file#types
+typedef vec_t(SDL_Point) vec_SDL_Point; // https://github.com/rxi/vec?tab=readme-ov-file#types
 
 /** Translates cell's absolute coordinates to relative (to viewport position). */
 SDL_Point GetCellRelCoordinates(SDL_Point viewport, SDL_Point cell)
@@ -57,7 +57,7 @@ SDL_Point GetCellAbsCoordinates(SDL_Point viewport, SDL_Point cell)
 
 
 /** Returns index of the element (`Cell`) in vector or -1 if no such cell present. */
-int __GetCellIndex(sdl_p_vec_t grid, SDL_Point cell)
+int _GetCellIndex(vec_SDL_Point grid, SDL_Point cell)
 {
     for (int i = 0; i < grid.length; i++)
     {
@@ -70,7 +70,7 @@ int __GetCellIndex(sdl_p_vec_t grid, SDL_Point cell)
     return -1;
 }
 
-bool IsCellAlive(sdl_p_vec_t grid, SDL_Point cell)
+bool IsCellAlive(vec_SDL_Point grid, SDL_Point cell)
 {
     for (int i = 0; i < grid.length; i++)
     {
@@ -84,28 +84,38 @@ bool IsCellAlive(sdl_p_vec_t grid, SDL_Point cell)
 }
 
 
-void UpdateGrid(sdl_p_vec_t *current, sdl_p_vec_t *next)
+vec_SDL_Point* UpdateGrid(vec_SDL_Point *current)
 {
+    vec_SDL_Point next;
+    vec_init(&next);
+
     for (int i = 0; i < current->length; i++)
     {
-        unsigned char noOfNeighbours = 0;
+        unsigned int noOfNeighbours = 0;
 
         if (IsCellAlive(*current, (SDL_Point){ current->data[i].x - 1, current->data[i].y + 1, })) noOfNeighbours++;
         if (IsCellAlive(*current, (SDL_Point){ current->data[i].x,     current->data[i].y + 1, })) noOfNeighbours++;
         if (IsCellAlive(*current, (SDL_Point){ current->data[i].x + 1, current->data[i].y + 1, })) noOfNeighbours++;
         if (IsCellAlive(*current, (SDL_Point){ current->data[i].x - 1, current->data[i].y,     })) noOfNeighbours++;
         if (IsCellAlive(*current, (SDL_Point){ current->data[i].x + 1, current->data[i].y,     })) noOfNeighbours++;
-        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x - 1, current->data[i].y, - 1 })) noOfNeighbours++;
-        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x,     current->data[i].y, - 1 })) noOfNeighbours++;
-        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x + 1, current->data[i].y, - 1 })) noOfNeighbours++;
+        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x - 1, current->data[i].y - 1, })) noOfNeighbours++;
+        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x,     current->data[i].y - 1, })) noOfNeighbours++;
+        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x + 1, current->data[i].y - 1, })) noOfNeighbours++;
 
+        /*
         if (noOfNeighbours < 2 || noOfNeighbours > 3)
         {
             // deadge
         }
-        // else if cell is dead and noOfNeighbours == 3
-            // alivge
-        //
+        */
+        if (noOfNeighbours == 2 || noOfNeighbours == 3)
+        {
+            int success = vec_push(&next, ((SDL_Point){ current->data[i].x, current->data[i].y, }));
+            if (success == -1)
+            {
+                printf("Cannot push new element to a vector.\n");
+            }
+        }
     }
 
     /*
@@ -119,6 +129,10 @@ void UpdateGrid(sdl_p_vec_t *current, sdl_p_vec_t *next)
         }
     }
     */
+
+    vec_deinit(&next);
+
+    return current;
 }
 
 int main(void)
@@ -155,14 +169,22 @@ int main(void)
 
     bool isGamePaused = true;
 
-    sdl_p_vec_t gridCurrentGen;
-    vec_init(&gridCurrentGen);
+    // Game world grid initialisation.
+    //
+    // Game world is ***infinitely*** large. Starting position of the viewport
+    // are in the top left corner.
 
-    sdl_p_vec_t gridNextGen;
-    vec_init(&gridNextGen);
+    vec_SDL_Point grid_CurrentGen;
+    vec_init(&grid_CurrentGen);
+
+    vec_SDL_Point grid_NextGen;
+    vec_init(&grid_NextGen);
 
     int totalGenerations = 0;
 
+
+    // more accuracy???
+    timer.sinceLastFrame = SDL_GetTicksNS();
 
     while (isMainLoopActive)
     {
@@ -198,14 +220,14 @@ int main(void)
                                 (SDL_Point){ .x = mousePosX, .y = mousePosY, }
                             );
 
-                            if (IsCellAlive(gridCurrentGen, __cellAbsPos))
+                            if (IsCellAlive(grid_CurrentGen, __cellAbsPos))
                             {
-                                int i = __GetCellIndex(gridCurrentGen, __cellAbsPos);
-                                vec_splice(&gridCurrentGen, i, 1);
+                                int i = __GetCellIndex(grid_CurrentGen, __cellAbsPos);
+                                vec_splice(&grid_CurrentGen, i, 1);
                             }
                             else
                             {
-                                int success = vec_push(&gridCurrentGen, (__cellAbsPos));
+                                int success = vec_push(&grid_CurrentGen, (__cellAbsPos));
                                 if (success == -1)
                                 {
                                     printf("Cannot push new element to a vector.\n");
@@ -248,11 +270,11 @@ int main(void)
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
-        for (int i = 0; i < gridCurrentGen.length; i++)
+        for (int i = 0; i < grid_CurrentGen.length; i++)
         {
             SDL_FRect rect = {
-                .x = gridCurrentGen.data[i].x * CELL_SIZE,
-                .y = gridCurrentGen.data[i].y * CELL_SIZE,
+                .x = grid_CurrentGen.data[i].x * CELL_SIZE,
+                .y = grid_CurrentGen.data[i].y * CELL_SIZE,
                 .w = CELL_SIZE,
                 .h = CELL_SIZE,
             };
@@ -263,7 +285,7 @@ int main(void)
 
         if (!isGamePaused && timer.active > GENERATION_LIVE_TIME)
         {
-            //UpdateGrid(gridCurrentGen, gridNextGen);
+            //UpdateGrid(grid_CurrentGen, grid_NextGen);
             totalGenerations++;
 
             timer.active = 0;
@@ -273,8 +295,8 @@ int main(void)
         SDL_Delay(50); // approx. 20fps
     }
 
-    vec_deinit(&gridCurrentGen);
-    vec_deinit(&gridNextGen);
+    vec_deinit(&grid_CurrentGen);
+    vec_deinit(&grid_NextGen);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
