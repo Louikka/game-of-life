@@ -151,8 +151,7 @@ int main()
     if (!SDL_CreateWindowAndRenderer("Conway's Game of Life", 0, 0, SDL_WINDOW_FULLSCREEN, &window, &renderer))
     {
         printf("Could not create window or renderer : %s.\n", SDL_GetError());
-        SDL_Quit();
-        return 0;
+        goto QuitSDL;
     }
 
 
@@ -161,7 +160,7 @@ int main()
     if (!SDL_GetWindowSize(window, &window_w, &window_h))
     {
         printf("Failed to get window size : %s.\n", SDL_GetError());
-        goto ProgramEnd;
+        goto DestroySDLRenderers;
     }
     else
     {
@@ -177,7 +176,7 @@ int main()
     if (GAME_GRID_WIDTH == 0 || GAME_GRID_HEIGHT == 0)
     {
         printf("Failed to figure out the game grid size.\n");
-        goto ProgramEnd;
+        goto DestroySDLRenderers;
     }
 
     TOTAL_GRID_SIZE = GAME_GRID_WIDTH * GAME_GRID_HEIGHT;
@@ -194,7 +193,7 @@ int main()
     if (GameGrid_Current == NULL || GameGrid_Next == NULL)
     {
         printf("Failed to allocate memory for game grids.\n");
-        goto ProgramEnd;
+        goto DestroySDLRenderers;
     }
 
 
@@ -318,10 +317,12 @@ MainLoopEnd:
     free(GameGrid_Current);
     free(GameGrid_Next);
 
-ProgramEnd:
+DestroySDLRenderers:
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+
+QuitSDL:
 
     SDL_Quit();
 
