@@ -2,7 +2,7 @@ SOURCE_DIR := source
 OUT_DIR := out
 
 SDL_SOURCE := SDL/x86_64-w64-mingw32
-ADDITIONAL_SOURCES := ./$(SOURCE_DIR)/rxi/vec-0.2.1/src/vec.c
+ADDITIONAL_SOURCES :=
 
 
 build : compile copy_SDL_dll
