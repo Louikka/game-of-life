@@ -31,6 +31,14 @@ SDL_Point GetCellPosition(int i)
         .y = (int)(i / GAME_GRID_WIDTH),
     };
 }
+/** Returns `SDL_Point` struct with positions adjusted with corresponded parameters. */
+SDL_Point GetCellPositionAdj(int i, int x, int y)
+{
+    return (SDL_Point){
+        .x = (i % GAME_GRID_WIDTH) + x,
+        .y = (int)(i / GAME_GRID_WIDTH) + y,
+    };
+}
 
 
 CellState GetCellState(CellState *grid, SDL_Point pos)
@@ -60,51 +68,65 @@ void ToggleCellState(CellState *grid, SDL_Point pos)
     }
 }
 
-/*
+
 void UpdateGrid(CellState *current, CellState *next)
 {
-    for (int i = 0; i < current->length; i++)
+    for (int i = 0; i < TOTAL_GRID_SIZE; i++)
     {
-        unsigned int noOfNeighbours = 0;
+        unsigned int neighbours = 0;
 
-        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x - 1, current->data[i].y + 1, })) noOfNeighbours++;
-        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x,     current->data[i].y + 1, })) noOfNeighbours++;
-        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x + 1, current->data[i].y + 1, })) noOfNeighbours++;
-        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x - 1, current->data[i].y,     })) noOfNeighbours++;
-        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x + 1, current->data[i].y,     })) noOfNeighbours++;
-        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x - 1, current->data[i].y - 1, })) noOfNeighbours++;
-        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x,     current->data[i].y - 1, })) noOfNeighbours++;
-        if (IsCellAlive(*current, (SDL_Point){ current->data[i].x + 1, current->data[i].y - 1, })) noOfNeighbours++;
+        if (IsCellAlive(current, GetCellPositionAdj(i, -1,  1) )) neighbours++;
+        if (IsCellAlive(current, GetCellPositionAdj(i,  0,  1) )) neighbours++;
+        if (IsCellAlive(current, GetCellPositionAdj(i,  1,  1) )) neighbours++;
+        if (IsCellAlive(current, GetCellPositionAdj(i, -1,  0) )) neighbours++;
+        if (IsCellAlive(current, GetCellPositionAdj(i,  1,  0) )) neighbours++;
+        if (IsCellAlive(current, GetCellPositionAdj(i, -1, -1) )) neighbours++;
+        if (IsCellAlive(current, GetCellPositionAdj(i,  0, -1) )) neighbours++;
+        if (IsCellAlive(current, GetCellPositionAdj(i,  1, -1) )) neighbours++;
 
-        if (noOfNeighbours < 2 || noOfNeighbours > 3)
+        /*
+        if (IsCellAlive(current, GetCellPosition(i)) && neighbours < 2)
         {
             // deadge
         }
-        if (noOfNeighbours == 2 || noOfNeighbours == 3)
+        else if (IsCellAlive(current, GetCellPosition(i)) && (neighbours == 2 || neighbours == 3))
         {
-            int success = vec_push(&next, ((SDL_Point){ current->data[i].x, current->data[i].y, }));
-            if (success == -1)
-            {
-                printf("Cannot push new element to a vector.\n");
-            }
+            // alivge
+        }
+        else if (IsCellAlive(current, GetCellPosition(i)) && neighbours > 3)
+        {
+            // deadge
+        }
+        else if (!IsCellAlive(current, GetCellPosition(i)) && neighbours == 3)
+        {
+            // alivge
+        }
+        */
+
+        if (
+            (!IsCellAlive(current, GetCellPosition(i)) && neighbours == 3) ||
+            (IsCellAlive(current, GetCellPosition(i)) && (neighbours == 2 || neighbours == 3))
+        )
+        {
+            SetCellState(next, GetCellPosition(i), ALIVE);
+        }
+        else
+        {
+            SetCellState(next, GetCellPosition(i), DEAD);
         }
     }
 
     // copy next generation grid to the current grid
-    for (int i = 0; i < CELLS_IN_GRID_HEIGHT; i++)
+    for (int i = 0; i < TOTAL_GRID_SIZE; i++)
     {
-        for (int j = 0; j < CELLS_IN_GRID_WIDTH; j++)
-        {
-            SetGridCellState(current, i, j, IsCellAlive(next, i, j) ? ALIVE : DEAD);
-            SetGridCellState(next, i, j, DEAD);
-        }
+        SetCellState(
+            current,
+            GetCellPosition(i),
+            GetCellState(next, GetCellPosition(i))
+        );
+        SetCellState(next, GetCellPosition(i), DEAD);
     }
-
-    vec_deinit(&next);
-
-    return current;
 }
-*/
 
 
 
@@ -281,7 +303,7 @@ int main()
 
         if (!IsGamePaused && timer.active > GENERATION_LIVE_TIME)
         {
-            //UpdateGrid(grid_CurrentGen, grid_NextGen);
+            UpdateGrid(GameGrid_Current, GameGrid_Next);
             TotalGenerations++;
 
             timer.active = 0;
