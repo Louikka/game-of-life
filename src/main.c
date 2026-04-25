@@ -76,7 +76,7 @@ void SetCellState(CellState *grid, SDL_Point pos, CellState state)
             SDL_LOG_CATEGORY_APPLICATION,
             "Failed to set state of the cell : cell outside of the grid."
         );
-        //return;
+        return;
     }
 
     if (pos.y < 0 || pos.y >= GAME_GRID_HEIGHT)
@@ -85,7 +85,7 @@ void SetCellState(CellState *grid, SDL_Point pos, CellState state)
             SDL_LOG_CATEGORY_APPLICATION,
             "Failed to set state of the cell : cell outside of the grid."
         );
-        //return;
+        return;
     }
 
     grid[pos.y * GAME_GRID_WIDTH + pos.x] = state;
