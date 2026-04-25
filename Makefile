@@ -1,4 +1,4 @@
-SOURCE_DIR := source
+SOURCE_DIR := src
 OUT_DIR := out
 
 SDL_SOURCE := SDL3
@@ -13,6 +13,7 @@ compile : make_out_dir
 	-o ./$(OUT_DIR)/game.exe \
 	-I"./$(SDL_SOURCE)/include/" \
 	-L"./$(SDL_SOURCE)/lib/"  -lSDL3 \
+	-mwindows \
 	-O2 -s
 
 copy_assets : make_out_dir

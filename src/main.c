@@ -43,11 +43,51 @@ SDL_Point GetCellPositionAdj(int i, int x, int y)
 
 CellState GetCellState(CellState *grid, SDL_Point pos)
 {
+    if (pos.x < 0 || pos.x >= GAME_GRID_WIDTH)
+    {
+        SDL_LogWarn(
+            SDL_LOG_CATEGORY_APPLICATION,
+            "Trying to get state of cell outside of the grid (%d, %d).",
+            pos.x,
+            pos.y
+        );
+        return DEAD;
+    }
+
+    if (pos.y < 0 || pos.y >= GAME_GRID_HEIGHT)
+    {
+        SDL_LogWarn(
+            SDL_LOG_CATEGORY_APPLICATION,
+            "Trying to get state of cell outside of the grid (%d, %d).",
+            pos.x,
+            pos.y
+        );
+        return DEAD;
+    }
+
     return grid[pos.y * GAME_GRID_WIDTH + pos.x];
 }
 
 void SetCellState(CellState *grid, SDL_Point pos, CellState state)
 {
+    if (pos.x < 0 || pos.x >= GAME_GRID_WIDTH)
+    {
+        SDL_LogError(
+            SDL_LOG_CATEGORY_APPLICATION,
+            "Failed to set state of the cell : cell outside of the grid."
+        );
+        //return;
+    }
+
+    if (pos.y < 0 || pos.y >= GAME_GRID_HEIGHT)
+    {
+        SDL_LogError(
+            SDL_LOG_CATEGORY_APPLICATION,
+            "Failed to set state of the cell : cell outside of the grid."
+        );
+        //return;
+    }
+
     grid[pos.y * GAME_GRID_WIDTH + pos.x] = state;
 }
 
@@ -73,16 +113,77 @@ void UpdateGrid(CellState *current, CellState *next)
 {
     for (int i = 0; i < TOTAL_GRID_SIZE; i++)
     {
+        const SDL_Point cell = GetCellPosition(i);
+
         unsigned int neighbours = 0;
 
-        if (IsCellAlive(current, GetCellPositionAdj(i, -1,  1) )) neighbours++;
-        if (IsCellAlive(current, GetCellPositionAdj(i,  0,  1) )) neighbours++;
-        if (IsCellAlive(current, GetCellPositionAdj(i,  1,  1) )) neighbours++;
-        if (IsCellAlive(current, GetCellPositionAdj(i, -1,  0) )) neighbours++;
-        if (IsCellAlive(current, GetCellPositionAdj(i,  1,  0) )) neighbours++;
-        if (IsCellAlive(current, GetCellPositionAdj(i, -1, -1) )) neighbours++;
-        if (IsCellAlive(current, GetCellPositionAdj(i,  0, -1) )) neighbours++;
-        if (IsCellAlive(current, GetCellPositionAdj(i,  1, -1) )) neighbours++;
+        //
+        //   o
+        // x
+        if (
+            cell.x >= 1 &&
+            cell.y <= (GAME_GRID_HEIGHT - 2) &&
+            IsCellAlive(current, GetCellPositionAdj(i, -1, 1))
+        ) neighbours++;
+
+        //
+        //   o
+        //   x
+        if (
+            cell.y <= (GAME_GRID_HEIGHT - 2) &&
+            IsCellAlive(current, GetCellPositionAdj(i, 0, 1))
+        ) neighbours++;
+
+        //
+        //   o
+        //     x
+        if (
+            cell.x <= (GAME_GRID_WIDTH - 2) &&
+            cell.y <= (GAME_GRID_HEIGHT - 2) &&
+            IsCellAlive(current, GetCellPositionAdj(i, 1, 1))
+        ) neighbours++;
+
+        //
+        // x o
+        //
+        if (
+            cell.x >= 1 &&
+            IsCellAlive(current, GetCellPositionAdj(i, -1, 0))
+        ) neighbours++;
+
+        //
+        //   o x
+        //
+        if (
+            cell.x <= (GAME_GRID_WIDTH - 2) &&
+            IsCellAlive(current, GetCellPositionAdj(i, 1, 0))
+        ) neighbours++;
+
+        // x
+        //   o
+        //
+        if (
+            cell.x >= 1 &&
+            cell.y >= 1 &&
+            IsCellAlive(current, GetCellPositionAdj(i, -1, -1))
+        ) neighbours++;
+
+        //   x
+        //   o
+        //
+        if (
+            cell.y >= 1 &&
+            IsCellAlive(current, GetCellPositionAdj(i,  0, -1))
+        ) neighbours++;
+
+        //     x
+        //   o
+        //
+        if (
+            cell.x <= (GAME_GRID_WIDTH - 2) &&
+            cell.y >= 1 &&
+            IsCellAlive(current, GetCellPositionAdj(i,  1, -1))
+        ) neighbours++;
 
         /*
         if (IsCellAlive(current, GetCellPosition(i)) && neighbours < 2)
@@ -104,27 +205,29 @@ void UpdateGrid(CellState *current, CellState *next)
         */
 
         if (
-            (!IsCellAlive(current, GetCellPosition(i)) && neighbours == 3) ||
-            (IsCellAlive(current, GetCellPosition(i)) && (neighbours == 2 || neighbours == 3))
+            (!IsCellAlive(current, cell) && neighbours == 3) ||
+            (IsCellAlive(current, cell) && (neighbours == 2 || neighbours == 3))
         )
         {
-            SetCellState(next, GetCellPosition(i), ALIVE);
+            SetCellState(next, cell, ALIVE);
         }
         else
         {
-            SetCellState(next, GetCellPosition(i), DEAD);
+            SetCellState(next, cell, DEAD);
         }
     }
 
     // copy next generation grid to the current grid
     for (int i = 0; i < TOTAL_GRID_SIZE; i++)
     {
+        const SDL_Point cell = GetCellPosition(i);
+
         SetCellState(
             current,
-            GetCellPosition(i),
-            GetCellState(next, GetCellPosition(i))
+            cell,
+            GetCellState(next, cell)
         );
-        SetCellState(next, GetCellPosition(i), DEAD);
+        SetCellState(next, cell, DEAD);
     }
 }
 
@@ -139,9 +242,16 @@ typedef struct {
 
 int main()
 {
+    SDL_SetLogPriorities(SDL_LOG_PRIORITY_DEBUG);
+
+
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
-        printf("Something went wrong while initializing SDL library : %s.\n", SDL_GetError());
+        SDL_LogError(
+            SDL_LOG_CATEGORY_SYSTEM,
+            "Something went wrong while initializing SDL library : %s.\n",
+            SDL_GetError()
+        );
         return 0;
     }
 
@@ -150,7 +260,11 @@ int main()
 
     if (!SDL_CreateWindowAndRenderer("Conway's Game of Life", 0, 0, SDL_WINDOW_FULLSCREEN, &window, &renderer))
     {
-        printf("Could not create window or renderer : %s.\n", SDL_GetError());
+        SDL_LogError(
+            SDL_LOG_CATEGORY_SYSTEM,
+            "Could not create window or renderer : %s.\n",
+            SDL_GetError()
+        );
         goto QuitSDL;
     }
 
@@ -159,12 +273,16 @@ int main()
 
     if (!SDL_GetWindowSize(window, &window_w, &window_h))
     {
-        printf("Failed to get window size : %s.\n", SDL_GetError());
+        SDL_LogError(
+            SDL_LOG_CATEGORY_SYSTEM,
+            "Failed to get window size : %s.\n",
+            SDL_GetError()
+        );
         goto DestroySDLRenderers;
     }
     else
     {
-        printf("Window size : %dx%d\n", window_w, window_h);
+        SDL_Log("Window size : %dx%d\n", window_w, window_h);
     }
 
 
@@ -175,13 +293,16 @@ int main()
 
     if (GAME_GRID_WIDTH == 0 || GAME_GRID_HEIGHT == 0)
     {
-        printf("Failed to figure out the game grid size.\n");
+        SDL_LogError(
+            SDL_LOG_CATEGORY_SYSTEM,
+            "Failed to figure out the game grid size.\n"
+        );
         goto DestroySDLRenderers;
     }
 
     TOTAL_GRID_SIZE = GAME_GRID_WIDTH * GAME_GRID_HEIGHT;
 
-    printf(
+    SDL_Log(
         "Size of the game world : %dx%d. Total amount of cells in grid : %d\n",
         GAME_GRID_WIDTH, GAME_GRID_HEIGHT,
         TOTAL_GRID_SIZE
@@ -192,12 +313,16 @@ int main()
 
     if (GameGrid_Current == NULL || GameGrid_Next == NULL)
     {
-        printf("Failed to allocate memory for game grids.\n");
+        SDL_LogError(
+            SDL_LOG_CATEGORY_SYSTEM,
+            "Failed to allocate memory for game grids.\n"
+        );
         goto DestroySDLRenderers;
     }
 
 
-    // Main game loop.
+
+    /* Main game loop ********************************************************/
 
     bool IsGamePaused = true;
     unsigned int TotalGenerations = 0;
@@ -231,7 +356,12 @@ int main()
 
                         if (event.button.button == SDL_BUTTON_LEFT)
                         {
-                            printf("Left mouse click detected at (%d, %d).\n", (int)event.button.x, (int)event.button.y);
+                            SDL_LogDebug(
+                                SDL_LOG_CATEGORY_APPLICATION,
+                                "Left mouse click detected at (%d, %d).\n",
+                                (int)event.button.x,
+                                (int)event.button.y
+                            );
 
                             ToggleCellState(GameGrid_Current, pos);
                         }
@@ -311,8 +441,8 @@ int main()
         SDL_Delay(50);
     }
 
-
 MainLoopEnd:
+
 
     free(GameGrid_Current);
     free(GameGrid_Next);
