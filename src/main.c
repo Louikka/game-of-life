@@ -3,28 +3,31 @@
 #include <stdint.h>
 
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 
 #define CELL_SIZE 10
 
 #define GENERATION_LIVE_TIME 0.1f // In seconds.
 
-#define DEAD 0
-#define ALIVE 1
 
 typedef char CellState;
 
+// two possible states of cell
+#define DEAD 0
+#define ALIVE 1
 
-int GAME_GRID_WIDTH = 0;
-int GAME_GRID_HEIGHT = 0;
 
-int TOTAL_GRID_SIZE = 0;
+static int GAME_GRID_WIDTH = 0;
+static int GAME_GRID_HEIGHT = 0;
+
+static int TOTAL_GRID_SIZE = 0;
 
 
 /**
  * @param `i` index in the array.
  */
-SDL_Point GetCellPosition(int i)
+static SDL_Point GetCellPosition(int i)
 {
     return (SDL_Point){
         .x = (i % GAME_GRID_WIDTH),
@@ -32,7 +35,7 @@ SDL_Point GetCellPosition(int i)
     };
 }
 /** Returns `SDL_Point` struct with positions adjusted with corresponded parameters. */
-SDL_Point GetCellPositionAdj(int i, int x, int y)
+static SDL_Point GetCellPositionAdj(int i, int x, int y)
 {
     return (SDL_Point){
         .x = (i % GAME_GRID_WIDTH) + x,
@@ -41,7 +44,7 @@ SDL_Point GetCellPositionAdj(int i, int x, int y)
 }
 
 
-CellState GetCellState(CellState *grid, SDL_Point pos)
+static CellState GetCellState(CellState *grid, SDL_Point pos)
 {
     if (pos.x < 0 || pos.x >= GAME_GRID_WIDTH)
     {
@@ -68,7 +71,7 @@ CellState GetCellState(CellState *grid, SDL_Point pos)
     return grid[pos.y * GAME_GRID_WIDTH + pos.x];
 }
 
-void SetCellState(CellState *grid, SDL_Point pos, CellState state)
+static void SetCellState(CellState *grid, SDL_Point pos, CellState state)
 {
     if (pos.x < 0 || pos.x >= GAME_GRID_WIDTH)
     {
@@ -91,12 +94,12 @@ void SetCellState(CellState *grid, SDL_Point pos, CellState state)
     grid[pos.y * GAME_GRID_WIDTH + pos.x] = state;
 }
 
-bool IsCellAlive(CellState *grid, SDL_Point pos)
+static bool IsCellAlive(CellState *grid, SDL_Point pos)
 {
     return GetCellState(grid, pos) == ALIVE;
 }
 
-void ToggleCellState(CellState *grid, SDL_Point pos)
+static void ToggleCellState(CellState *grid, SDL_Point pos)
 {
     if (IsCellAlive(grid, pos))
     {
@@ -109,7 +112,7 @@ void ToggleCellState(CellState *grid, SDL_Point pos)
 }
 
 
-void UpdateGrid(CellState *current, CellState *next)
+static void UpdateGrid(CellState *current, CellState *next)
 {
     for (int i = 0; i < TOTAL_GRID_SIZE; i++)
     {
@@ -239,21 +242,71 @@ typedef struct {
 } Timer;
 
 
+static SDL_Surface *CreateTextSurface(
+    TTF_Font *font,
+    const char *text,
+    SDL_Color color,
+    SDL_Rect *text_rect
+)
+{
+    text_rect->x = 0;
+    text_rect->y = 0;
+
+    TTF_GetStringSize(
+        font,
+        text,
+        0,
+        &text_rect->w, &text_rect->h
+    );
+
+    return TTF_RenderText_Blended(
+        font,
+        text,
+        0,
+        color
+    );
+}
+
+
+
+
 
 int main()
 {
     SDL_SetLogPriorities(SDL_LOG_PRIORITY_DEBUG);
 
 
+
+    /* Initializing SDL library and creating window **************************/
+
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
         SDL_LogError(
             SDL_LOG_CATEGORY_SYSTEM,
-            "Something went wrong while initializing SDL library : %s.\n",
+            "Something went wrong while initializing SDL library : %s\n",
             SDL_GetError()
         );
         return 0;
     }
+    else
+    {
+        atexit(SDL_Quit);
+    }
+
+    if (!TTF_Init())
+    {
+        SDL_LogError(
+            SDL_LOG_CATEGORY_SYSTEM,
+            "Something went wrong while initializing SDL_ttf : %s\n",
+            SDL_GetError()
+        );
+        return 0;
+    }
+    else
+    {
+        atexit(TTF_Quit);
+    }
+
 
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
@@ -262,34 +315,73 @@ int main()
     {
         SDL_LogError(
             SDL_LOG_CATEGORY_SYSTEM,
-            "Could not create window or renderer : %s.\n",
+            "Could not create window or renderer : %s\n",
             SDL_GetError()
         );
-        goto QuitSDL;
+        return 0;
     }
 
 
-    int window_w, window_h;
+    SDL_Rect window_rect;
 
-    if (!SDL_GetWindowSize(window, &window_w, &window_h))
+    if (!SDL_GetWindowSize(window, &window_rect.w, &window_rect.h))
     {
         SDL_LogError(
             SDL_LOG_CATEGORY_SYSTEM,
-            "Failed to get window size : %s.\n",
+            "Failed to get window size : %s\n",
             SDL_GetError()
         );
         goto DestroySDLRenderers;
     }
     else
     {
-        SDL_Log("Window size : %dx%d\n", window_w, window_h);
+        SDL_LogDebug(
+            SDL_LOG_CATEGORY_APPLICATION,
+            "Window size: %dx%d.\n",
+            window_rect.w, window_rect.h
+        );
     }
 
 
-    // Game world initialisation.
 
-    GAME_GRID_WIDTH = window_w / CELL_SIZE;
-    GAME_GRID_HEIGHT = window_h / CELL_SIZE;
+    /* Setting up fonts and text *********************************************/
+
+    TTF_Font *font_JetBrainsMono_Regular = TTF_OpenFont("JetBrainsMono-Regular.ttf", 16);
+    if (font_JetBrainsMono_Regular == NULL)
+    {
+        SDL_LogError(
+            SDL_LOG_CATEGORY_APPLICATION,
+            "Failed open a font : %s\n",
+            SDL_GetError()
+        );
+        goto DestroySDLRenderers;
+    }
+
+
+    // "Hello, world!"
+    SDL_Rect text_HelloWorld_rect;
+    SDL_Texture *text_HelloWorld_texture = SDL_CreateTextureFromSurface(renderer, CreateTextSurface(
+        font_JetBrainsMono_Regular,
+        "Hello World!",
+        (SDL_Color){255, 255, 255},
+        &text_HelloWorld_rect
+    ));
+
+    // controls
+    SDL_Rect text_Controls_rect;
+    SDL_Texture *text_Controls_texture = SDL_CreateTextureFromSurface(renderer, CreateTextSurface(
+        font_JetBrainsMono_Regular,
+        "Press Space to start/stop the simulation. Press q or Esc to exit.",
+        (SDL_Color){255, 255, 255},
+        &text_Controls_rect
+    ));
+
+
+
+    /* Game world initialisation *********************************************/
+
+    GAME_GRID_WIDTH = window_rect.w / CELL_SIZE;
+    GAME_GRID_HEIGHT = window_rect.h / CELL_SIZE;
 
     if (GAME_GRID_WIDTH == 0 || GAME_GRID_HEIGHT == 0)
     {
@@ -297,7 +389,7 @@ int main()
             SDL_LOG_CATEGORY_SYSTEM,
             "Failed to figure out the game grid size.\n"
         );
-        goto DestroySDLRenderers;
+        goto CloseTTFFonts;
     }
 
     TOTAL_GRID_SIZE = GAME_GRID_WIDTH * GAME_GRID_HEIGHT;
@@ -317,7 +409,7 @@ int main()
             SDL_LOG_CATEGORY_SYSTEM,
             "Failed to allocate memory for game grids.\n"
         );
-        goto DestroySDLRenderers;
+        goto CloseTTFFonts;
     }
 
 
@@ -385,7 +477,7 @@ int main()
                         }
                     }
 
-                    if (event.key.key == SDLK_ESCAPE)
+                    if (event.key.key == SDLK_ESCAPE || event.key.key == SDLK_Q)
                     {
                         SDL_Event ev;
                         ev.type = SDL_EVENT_QUIT;
@@ -427,6 +519,17 @@ int main()
             }
         }
 
+        if (IsGamePaused)
+        {
+            SDL_FRect _a;
+            SDL_RectToFRect(&text_Controls_rect, &_a);
+
+            _a.x = 20;
+            _a.y = 20;
+
+            SDL_RenderTexture(renderer, text_Controls_texture, NULL, &_a);
+        }
+
         SDL_RenderPresent(renderer);
 
 
@@ -447,14 +550,17 @@ MainLoopEnd:
     free(GameGrid_Current);
     free(GameGrid_Next);
 
+    //SDL_DestroySurface(text_HelloWorld_surface);
+    SDL_DestroyTexture(text_HelloWorld_texture);
+
+CloseTTFFonts:
+
+    TTF_CloseFont(font_JetBrainsMono_Regular);
+
 DestroySDLRenderers:
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
-
-QuitSDL:
-
-    SDL_Quit();
 
     return 0;
 }
