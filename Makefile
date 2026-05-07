@@ -1,30 +1,37 @@
 SOURCE_DIR := src
-OUT_DIR := out
-
-SDL_SOURCE := SDL3
 ADDITIONAL_SOURCES :=
 
+OUT_DIR := out
 
-build : compile copy_assets
 
-# add `-mwindows` flag to disable console
-compile : make_out_dir
+
+dev : copy_assets
 	gcc ./$(SOURCE_DIR)/main.c $(ADDITIONAL_SOURCES) \
 	-o ./$(OUT_DIR)/game.exe \
-	-I"./$(SDL_SOURCE)/include/" \
-	-L"./$(SDL_SOURCE)/lib/"  -lSDL3 \
+	-I"./SDL3/include/" \
+	-L"./SDL3/lib/"  -lSDL3 -lSDL3_ttf \
+
+
+# add `-mwindows` flag to disable console
+build : copy_assets
+	gcc ./$(SOURCE_DIR)/main.c $(ADDITIONAL_SOURCES) \
+	-o ./$(OUT_DIR)/game.exe \
+	-I"./SDL3/include/" \
+	-L"./SDL3/lib/"  -lSDL3 -lSDL3_ttf \
 	-mwindows \
 	-O2 -s
 
-copy_assets : make_out_dir
-#robocopy "./$(SDL_SOURCE)/bin/" "./$(OUT_DIR)/" "SDL3.dll" /XC /XN /XO
-	if not exist "./$(OUT_DIR)/SDL3.dll" copy "./$(SDL_SOURCE)/bin/SDL3.dll" "./$(OUT_DIR)/"
+
 
 make_out_dir :
 	if not exist "./$(OUT_DIR)" mkdir "./$(OUT_DIR)"
 
-clean :
-	if exist "./$(OUT_DIR)" rmdir /s "./$(OUT_DIR)"
+copy_assets : make_out_dir
+	robocopy "./SDL3/bin" "./$(OUT_DIR)" "SDL3.dll" "SDL3_ttf.dll" /XC /XN /XO
+	robocopy "./assets/fonts/JetBrains_Mono/static" "./$(OUT_DIR)" "JetBrainsMono-Regular.ttf" /XC /XN /XO
+#	if not exist "./$(OUT_DIR)/SDL3.dll" copy "./SDL3/bin/SDL3.dll" "./$(OUT_DIR)"
+#	if not exist "./$(OUT_DIR)/SDL3_ttf.dll" copy "./SDL3/bin/SDL3_ttf.dll" "./$(OUT_DIR)"
 
 
-.PHONY : build compile copy_assets make_out_dir clean
+
+.PHONY : dev build make_out_dir copy_assets
