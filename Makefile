@@ -7,7 +7,7 @@ OUT_DIR := out
 
 dev : copy_assets
 	gcc ./$(SOURCE_DIR)/main.c $(ADDITIONAL_SOURCES) \
-	-o ./$(OUT_DIR)/game.exe \
+	-o ./$(OUT_DIR)/game-dev.exe \
 	-I"./SDL3/include/" \
 	-L"./SDL3/lib/"  -lSDL3 -lSDL3_ttf \
 

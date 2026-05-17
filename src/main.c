@@ -234,6 +234,72 @@ static void UpdateGrid(CellState *current, CellState *next)
     }
 }
 
+static void ClearGrid(CellState *grid)
+{
+    for (int i = 0; i < TOTAL_GRID_SIZE; i++)
+    {
+        const SDL_Point cell = GetCellPosition(i);
+        SetCellState(grid, cell, DEAD);
+    }
+}
+
+
+static void DrawGosperGliderGun(CellState *grid, SDL_Point pos)
+{
+    // https://en.wikipedia.org/wiki/Gun_(cellular_automaton)
+
+    SDL_Rect boundRect = {
+        .x = pos.x,
+        .y = pos.y,
+        .w = 38,
+        .h = 11,
+    };
+
+    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 1 + pos.y, }, ALIVE);
+
+    SetCellState(grid, (SDL_Point){ .x = 23 + pos.x, .y = 2 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 2 + pos.y, }, ALIVE);
+
+    SetCellState(grid, (SDL_Point){ .x = 13 + pos.x, .y = 3 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 14 + pos.x, .y = 3 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 3 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 3 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 35 + pos.x, .y = 3 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 36 + pos.x, .y = 3 + pos.y, }, ALIVE);
+
+    SetCellState(grid, (SDL_Point){ .x = 12 + pos.x, .y = 4 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 16 + pos.x, .y = 4 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 4 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 4 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 35 + pos.x, .y = 4 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 36 + pos.x, .y = 4 + pos.y, }, ALIVE);
+
+    SetCellState(grid, (SDL_Point){ .x = 1 + pos.x, .y = 5 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 2 + pos.x, .y = 5 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 5 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 5 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 5 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 5 + pos.y, }, ALIVE);
+
+    SetCellState(grid, (SDL_Point){ .x = 1 + pos.x, .y = 6 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 2 + pos.x, .y = 6 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 6 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 15 + pos.x, .y = 6 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 6 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 18 + pos.x, .y = 6 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 23 + pos.x, .y = 6 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 6 + pos.y, }, ALIVE);
+
+    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 7 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 7 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 7 + pos.y, }, ALIVE);
+
+    SetCellState(grid, (SDL_Point){ .x = 12 + pos.x, .y = 8 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 16 + pos.x, .y = 8 + pos.y, }, ALIVE);
+
+    SetCellState(grid, (SDL_Point){ .x = 13 + pos.x, .y = 9 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 14 + pos.x, .y = 9 + pos.y, }, ALIVE);
+}
 
 
 typedef struct {
@@ -358,23 +424,15 @@ int main()
     }
 
 
-    // "Hello, world!"
-    SDL_Rect text_HelloWorld_rect;
-    SDL_Texture *text_HelloWorld_texture = SDL_CreateTextureFromSurface(renderer, CreateTextSurface(
-        font_JetBrainsMono_Regular,
-        "Hello World!",
-        (SDL_Color){255, 255, 255},
-        &text_HelloWorld_rect
-    ));
-
     // controls
     SDL_Rect text_Controls_rect;
-    SDL_Texture *text_Controls_texture = SDL_CreateTextureFromSurface(renderer, CreateTextSurface(
+    SDL_Surface *text_Controls_surface = CreateTextSurface(
         font_JetBrainsMono_Regular,
-        "Press Space to start/stop the simulation. Press q or Esc to exit.",
+        "Press Space to start/stop the simulation. Press c to clear game grid. Press q or Esc to exit.",
         (SDL_Color){255, 255, 255},
         &text_Controls_rect
-    ));
+    );
+    SDL_Texture *text_Controls_texture = SDL_CreateTextureFromSurface(renderer, text_Controls_surface);
 
 
 
@@ -476,13 +534,20 @@ int main()
                             IsGamePaused = true;
                         }
                     }
-
-                    if (event.key.key == SDLK_ESCAPE || event.key.key == SDLK_Q)
+                    else if (event.key.key == SDLK_ESCAPE || event.key.key == SDLK_Q)
                     {
                         SDL_Event ev;
                         ev.type = SDL_EVENT_QUIT;
                         SDL_PushEvent(&ev);
-                        break;
+                    }
+                    else if (event.key.key == SDLK_C)
+                    {
+                        SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Clearing grid...");
+                        ClearGrid(GameGrid_Current);
+                    }
+                    else if (event.key.key == SDLK_G)
+                    {
+                        DrawGosperGliderGun(GameGrid_Current, (SDL_Point){ .x = 10, .y = 10, });
                     }
 
                     break;
@@ -550,8 +615,8 @@ MainLoopEnd:
     free(GameGrid_Current);
     free(GameGrid_Next);
 
-    //SDL_DestroySurface(text_HelloWorld_surface);
-    SDL_DestroyTexture(text_HelloWorld_texture);
+    SDL_DestroySurface(text_Controls_surface);
+    SDL_DestroyTexture(text_Controls_texture);
 
 CloseTTFFonts:
 
