@@ -28,3 +28,31 @@ target_compile_options(game
 PRIVATE
     -O2 -s
 )
+
+
+add_custom_command(
+    TARGET game
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/JetBrains_Mono/static/JetBrainsMono-Regular.ttf"
+        "$<TARGET_FILE_DIR:game>/JetBrainsMono-Regular.ttf"
+    COMMENT "Copying assets..."
+)
+
+add_custom_command(
+    TARGET game
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:SDL3::SDL3>"
+        "$<TARGET_FILE_DIR:game>"
+    COMMENT "Copying SDL..."
+)
+
+add_custom_command(
+    TARGET game
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:SDL3_ttf::SDL3_ttf>"
+        "$<TARGET_FILE_DIR:game>"
+    COMMENT "Copying SDL_ttf..."
+)
