@@ -69,6 +69,12 @@ _deps
 CMakeUserPresets.json
 
 
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+
 *.code-workspace
 *.ini
 
