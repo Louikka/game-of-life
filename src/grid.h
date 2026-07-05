@@ -46,14 +46,14 @@ SDL_Point GetCellPositionAdj(int i, int x, int y);
 
 CellState GetCellState(CellState *grid, SDL_Point pos);
 
-void SetCellState(CellState *grid, SDL_Point pos, CellState state);
+void SetCellState(CellState *grid, SDL_Point pos, CellState State);
 
 bool IsCellAlive(CellState *grid, SDL_Point pos);
 
 void ToggleCellState(CellState *grid, SDL_Point pos);
 
 
-void UpdateGrid(CellState *current, CellState *next);
+void UpdateGrid(CellState *Current, CellState *Next);
 
 void ClearGrid(CellState *grid);
 

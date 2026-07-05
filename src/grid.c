@@ -60,7 +60,7 @@ CellState GetCellState(CellState *grid, SDL_Point pos)
     return grid[pos.y * GAME_GRID_WIDTH + pos.x];
 }
 
-void SetCellState(CellState *grid, SDL_Point pos, CellState state)
+void SetCellState(CellState *grid, SDL_Point pos, CellState State)
 {
     if (pos.x < 0 || pos.x >= GAME_GRID_WIDTH)
     {
@@ -82,7 +82,7 @@ void SetCellState(CellState *grid, SDL_Point pos, CellState state)
         return;
     }
 
-    grid[pos.y * GAME_GRID_WIDTH + pos.x] = state;
+    grid[pos.y * GAME_GRID_WIDTH + pos.x] = State;
 }
 
 bool IsCellAlive(CellState *grid, SDL_Point pos)
@@ -104,105 +104,105 @@ void ToggleCellState(CellState *grid, SDL_Point pos)
 
 
 
-void UpdateGrid(CellState *current, CellState *next)
+void UpdateGrid(CellState *Current, CellState *Next)
 {
     for (int i = 0; i < TOTAL_GRID_SIZE; i++)
     {
-        const SDL_Point cell = GetCellPosition(i);
+        const SDL_Point Cell = GetCellPosition(i);
 
-        unsigned int neighbours = 0;
+        unsigned int Neighbours = 0;
 
         //
         //   o
         // x
         if (
-            cell.x >= 1
-            && cell.y <= (GAME_GRID_HEIGHT - 2)
-            && IsCellAlive(current, GetCellPositionAdj(i, -1, 1))
-        ) neighbours++;
+            Cell.x >= 1
+            && Cell.y <= (GAME_GRID_HEIGHT - 2)
+            && IsCellAlive(Current, GetCellPositionAdj(i, -1, 1))
+        ) Neighbours++;
 
         //
         //   o
         //   x
         if (
-            cell.y <= (GAME_GRID_HEIGHT - 2)
-            && IsCellAlive(current, GetCellPositionAdj(i, 0, 1))
-        ) neighbours++;
+            Cell.y <= (GAME_GRID_HEIGHT - 2)
+            && IsCellAlive(Current, GetCellPositionAdj(i, 0, 1))
+        ) Neighbours++;
 
         //
         //   o
         //     x
         if (
-            cell.x <= (GAME_GRID_WIDTH - 2)
-            && cell.y <= (GAME_GRID_HEIGHT - 2)
-            && IsCellAlive(current, GetCellPositionAdj(i, 1, 1))
-        ) neighbours++;
+            Cell.x <= (GAME_GRID_WIDTH - 2)
+            && Cell.y <= (GAME_GRID_HEIGHT - 2)
+            && IsCellAlive(Current, GetCellPositionAdj(i, 1, 1))
+        ) Neighbours++;
 
         //
         // x o
         //
         if (
-            cell.x >= 1
-            && IsCellAlive(current, GetCellPositionAdj(i, -1, 0))
-        ) neighbours++;
+            Cell.x >= 1
+            && IsCellAlive(Current, GetCellPositionAdj(i, -1, 0))
+        ) Neighbours++;
 
         //
         //   o x
         //
         if (
-            cell.x <= (GAME_GRID_WIDTH - 2)
-            && IsCellAlive(current, GetCellPositionAdj(i, 1, 0))
-        ) neighbours++;
+            Cell.x <= (GAME_GRID_WIDTH - 2)
+            && IsCellAlive(Current, GetCellPositionAdj(i, 1, 0))
+        ) Neighbours++;
 
         // x
         //   o
         //
         if (
-            cell.x >= 1
-            && cell.y >= 1
-            && IsCellAlive(current, GetCellPositionAdj(i, -1, -1))
-        ) neighbours++;
+            Cell.x >= 1
+            && Cell.y >= 1
+            && IsCellAlive(Current, GetCellPositionAdj(i, -1, -1))
+        ) Neighbours++;
 
         //   x
         //   o
         //
         if (
-            cell.y >= 1
-            && IsCellAlive(current, GetCellPositionAdj(i,  0, -1))
-        ) neighbours++;
+            Cell.y >= 1
+            && IsCellAlive(Current, GetCellPositionAdj(i,  0, -1))
+        ) Neighbours++;
 
         //     x
         //   o
         //
         if (
-            cell.x <= (GAME_GRID_WIDTH - 2)
-            && cell.y >= 1
-            && IsCellAlive(current, GetCellPositionAdj(i,  1, -1))
-        ) neighbours++;
+            Cell.x <= (GAME_GRID_WIDTH - 2)
+            && Cell.y >= 1
+            && IsCellAlive(Current, GetCellPositionAdj(i,  1, -1))
+        ) Neighbours++;
 
 
-        if ((!IsCellAlive(current, cell) && neighbours == 3)
-            || (IsCellAlive(current, cell) && (neighbours == 2 || neighbours == 3)))
+        if ((!IsCellAlive(Current, Cell) && Neighbours == 3)
+            || (IsCellAlive(Current, Cell) && (Neighbours == 2 || Neighbours == 3)))
         {
-            SetCellState(next, cell, ALIVE);
+            SetCellState(Next, Cell, ALIVE);
         }
         else
         {
-            SetCellState(next, cell, DEAD);
+            SetCellState(Next, Cell, DEAD);
         }
     }
 
     // copy next generation grid to the current grid
     for (int i = 0; i < TOTAL_GRID_SIZE; i++)
     {
-        const SDL_Point cell = GetCellPosition(i);
+        const SDL_Point Cell = GetCellPosition(i);
 
         SetCellState(
-            current,
-            cell,
-            GetCellState(next, cell)
+            Current,
+            Cell,
+            GetCellState(Next, Cell)
         );
-        SetCellState(next, cell, DEAD);
+        SetCellState(Next, Cell, DEAD);
     }
 }
 
@@ -210,8 +210,8 @@ void ClearGrid(CellState *grid)
 {
     for (int i = 0; i < TOTAL_GRID_SIZE; i++)
     {
-        const SDL_Point cell = GetCellPosition(i);
-        SetCellState(grid, cell, DEAD);
+        const SDL_Point Cell = GetCellPosition(i);
+        SetCellState(grid, Cell, DEAD);
     }
 }
 
@@ -221,55 +221,55 @@ void DrawGosperGliderGun(CellState *grid, SDL_Point pos)
 {
     // https://en.wikipedia.org/wiki/Gun_(cellular_automaton)
 
-    SDL_Rect boundRect = {
+    SDL_Rect BoundRect = {
         .x = pos.x,
         .y = pos.y,
         .w = 38,
         .h = 11,
     };
 
-    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 1 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 1 + pos.y }, ALIVE);
 
-    SetCellState(grid, (SDL_Point){ .x = 23 + pos.x, .y = 2 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 2 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 23 + pos.x, .y = 2 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 2 + pos.y }, ALIVE);
 
-    SetCellState(grid, (SDL_Point){ .x = 13 + pos.x, .y = 3 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 14 + pos.x, .y = 3 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 3 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 3 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 35 + pos.x, .y = 3 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 36 + pos.x, .y = 3 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 13 + pos.x, .y = 3 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 14 + pos.x, .y = 3 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 3 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 3 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 35 + pos.x, .y = 3 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 36 + pos.x, .y = 3 + pos.y }, ALIVE);
 
-    SetCellState(grid, (SDL_Point){ .x = 12 + pos.x, .y = 4 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 16 + pos.x, .y = 4 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 4 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 4 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 35 + pos.x, .y = 4 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 36 + pos.x, .y = 4 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 12 + pos.x, .y = 4 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 16 + pos.x, .y = 4 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 4 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 4 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 35 + pos.x, .y = 4 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 36 + pos.x, .y = 4 + pos.y }, ALIVE);
 
-    SetCellState(grid, (SDL_Point){ .x = 1 + pos.x, .y = 5 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 2 + pos.x, .y = 5 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 5 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 5 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 5 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 5 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 1 + pos.x, .y = 5 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 2 + pos.x, .y = 5 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 5 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 5 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 5 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 5 + pos.y }, ALIVE);
 
-    SetCellState(grid, (SDL_Point){ .x = 1 + pos.x, .y = 6 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 2 + pos.x, .y = 6 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 6 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 15 + pos.x, .y = 6 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 6 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 18 + pos.x, .y = 6 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 23 + pos.x, .y = 6 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 6 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 1 + pos.x, .y = 6 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 2 + pos.x, .y = 6 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 6 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 15 + pos.x, .y = 6 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 6 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 18 + pos.x, .y = 6 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 23 + pos.x, .y = 6 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 6 + pos.y }, ALIVE);
 
-    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 7 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 7 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 7 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 7 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 7 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 7 + pos.y }, ALIVE);
 
-    SetCellState(grid, (SDL_Point){ .x = 12 + pos.x, .y = 8 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 16 + pos.x, .y = 8 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 12 + pos.x, .y = 8 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 16 + pos.x, .y = 8 + pos.y }, ALIVE);
 
-    SetCellState(grid, (SDL_Point){ .x = 13 + pos.x, .y = 9 + pos.y, }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 14 + pos.x, .y = 9 + pos.y, }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 13 + pos.x, .y = 9 + pos.y }, ALIVE);
+    SetCellState(grid, (SDL_Point){ .x = 14 + pos.x, .y = 9 + pos.y }, ALIVE);
 }
