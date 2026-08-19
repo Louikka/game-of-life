@@ -5,8 +5,6 @@
 
 #define CELL_SIZE 10 // In pixels.
 
-#define GENERATION_LIVE_TIME 0.1f // In seconds.
-
 
 /** `DEAD` = 0, `ALIVE` = 1. */
 typedef char CellState;
@@ -17,18 +15,15 @@ typedef char CellState;
 
 
 /**
- * Game grid dimension (width). Technically constant - should be set when
- * creating a window and will not change afterwards.
+ * Game grid dimension (width).
  */
 extern int GAME_GRID_WIDTH;
 /**
- * Game grid dimension (height). Technically constant - should be set when
- * creating a window and will not change afterwards.
+ * Game grid dimension (height).
  */
 extern int GAME_GRID_HEIGHT;
 /**
- * Total amount of cells in grid. Technically constant - should be set when
- * creating a window and will not change afterwards.
+ * Total amount of cells in grid.
  */
 extern int TOTAL_GRID_SIZE;
 

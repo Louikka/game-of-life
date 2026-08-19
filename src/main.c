@@ -10,6 +10,11 @@
 
 
 
+// in seconds
+#define GAME_MIN_GENERATION_TIME 0.01f
+#define GAME_MAX_GENERATION_TIME 1f
+
+
 typedef struct
 {
     float Active;
@@ -183,6 +188,9 @@ int main()
     /* Main game loop ********************************************************/
 
     bool IsGamePaused = true;
+
+    /** Basically, speed of the game (in seconds). */
+    float GenerationLiveTime = 0.1;
     unsigned int TotalGenerations = 0;
 
     Timer Timer = {
@@ -229,7 +237,7 @@ int main()
 
                 case SDL_EVENT_KEY_DOWN:
                 {
-                    // Space button press - run/pause simulation.
+                    // Space button press — run/pause simulation.
                     if (event.key.key == SDLK_SPACE && !event.key.repeat)
                     {
                         if (IsGamePaused)
@@ -242,17 +250,30 @@ int main()
                             IsGamePaused = true;
                         }
                     }
+                    // Escape/Q — quit
                     else if (event.key.key == SDLK_ESCAPE || event.key.key == SDLK_Q)
                     {
                         SDL_Event ev;
                         ev.type = SDL_EVENT_QUIT;
                         SDL_PushEvent(&ev);
                     }
+                    // C — clear canvas
                     else if (event.key.key == SDLK_C)
                     {
                         SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Clearing grid...");
                         ClearGrid(GameGrid_Current);
                     }
+                    // + — increase game speed
+                    else if (event.key.key == SDLK_PLUS || event.key.key == SDLK_KP_PLUS)
+                    {
+                        // TODO: implement speed controls
+                    }
+                    // - — decrease game speed
+                    else if (event.key.key == SDLK_MINUS || event.key.key == SDLK_KP_MINUS)
+                    {
+                        // TODO: implement speed controls
+                    }
+                    // G — draw a glider
                     else if (event.key.key == SDLK_G)
                     {
                         DrawGosperGliderGun(GameGrid_Current,
@@ -307,7 +328,7 @@ int main()
         SDL_RenderPresent(Renderer);
 
 
-        if (!IsGamePaused && Timer.Active > GENERATION_LIVE_TIME)
+        if (!IsGamePaused && Timer.Active > GenerationLiveTime)
         {
             UpdateGrid(GameGrid_Current, GameGrid_Next);
             TotalGenerations++;
