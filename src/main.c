@@ -5,7 +5,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
-#include "grid.h"
+#include "lib/grid.h"
+#include "lib/draw.h"
 
 
 

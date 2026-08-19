@@ -58,8 +58,5 @@ void UpdateGrid(CellState *Current, CellState *Next);
 void ClearGrid(CellState *grid);
 
 
-void DrawGosperGliderGun(CellState *grid, SDL_Point pos);
-
-
 
 #endif

@@ -15,7 +15,8 @@ add_executable(game WIN32)
 target_sources(game
 PRIVATE
     src/main.c
-    src/grid.c
+    src/lib/grid.c
+    src/lib/draw.c
 )
 
 target_link_libraries(game
