@@ -43,7 +43,7 @@ int main()
 
 
 
-    /* Initializing SDL library and creating window **************************/
+    /* Initializing SDL and window and renderer ******************************/
 
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
@@ -101,8 +101,6 @@ int main()
             "Failed to get window size : %s\n",
             SDL_GetError()
         );
-
-        goto DestroySDLRenderers;
     }
     else
     {
@@ -117,50 +115,51 @@ int main()
 
     /* Setting up fonts and text *********************************************/
 
+    TTF_TextEngine *RendererTextEngine = TTF_CreateRendererTextEngine(Renderer);
+    if (RendererTextEngine == NULL)
+    {
+        SDL_LogError(
+            SDL_LOG_CATEGORY_APPLICATION,
+            "Failed to create text engine : %s\n",
+            SDL_GetError()
+        );
+    }
+
+
     TTF_Font *Font_JetBrainsMonoRegular = TTF_OpenFont("JetBrainsMono-Regular.ttf", 16);
     if (Font_JetBrainsMonoRegular == NULL)
     {
         SDL_LogError(
             SDL_LOG_CATEGORY_APPLICATION,
-            "Failed open a font : %s\n",
+            "Failed to open a font : %s\n",
             SDL_GetError()
         );
-
-        goto DestroySDLRenderers;
     }
 
 
-    // controls
-    char *Text_Controls =
-        "Press Space to start/stop the simulation. Press c to clear game grid. "
-        "Press q or Esc to exit.";
-
-    SDL_Rect TextRect_Controls;
-
-    SDL_Surface *TextSurface_Controls = CreateTextSurface(
+    TTF_Text *TextObjControls = TTF_CreateText(
+        RendererTextEngine,
         Font_JetBrainsMonoRegular,
-        Text_Controls,
-        (SDL_Color){255, 255, 255},
-        &TextRect_Controls
+        "Press Space to start/stop the simulation. Press c to clear game grid. "
+        "Press q or Esc to exit.",
+        0
     );
 
-    SDL_Texture *TextTexture_Controls =
-        SDL_CreateTextureFromSurface(Renderer, TextSurface_Controls);
+    TTF_SetTextColor(TextObjControls, 255, 255, 255, 255);
 
 
 
-    /* Game world initialisation *********************************************/
+    /* Game initialisation ***************************************************/
 
     GAME_GRID_WIDTH = WindowRect.w / CELL_SIZE;
     GAME_GRID_HEIGHT = WindowRect.h / CELL_SIZE;
 
-    if (GAME_GRID_WIDTH == 0 || GAME_GRID_HEIGHT == 0)
+    if (GAME_GRID_WIDTH <= 0 || GAME_GRID_HEIGHT <= 0)
     {
         SDL_LogError(
             SDL_LOG_CATEGORY_SYSTEM,
             "Failed to figure out the game grid size.\n"
         );
-        goto CloseTTFFonts;
     }
 
     TOTAL_GRID_SIZE = GAME_GRID_WIDTH * GAME_GRID_HEIGHT;
@@ -180,7 +179,8 @@ int main()
             SDL_LOG_CATEGORY_SYSTEM,
             "Failed to allocate memory for game grids.\n"
         );
-        goto CloseTTFFonts;
+
+        goto SkipMainLoop;
     }
 
 
@@ -316,13 +316,7 @@ int main()
 
         if (IsGamePaused)
         {
-            SDL_FRect _a;
-            SDL_RectToFRect(&TextRect_Controls, &_a);
-
-            _a.x = 20;
-            _a.y = 20;
-
-            SDL_RenderTexture(Renderer, TextTexture_Controls, NULL, &_a);
+            TTF_DrawRendererText(TextObjControls, 20, 20);
         }
 
         SDL_RenderPresent(Renderer);
@@ -340,19 +334,19 @@ int main()
     }
 
 MainLoopEnd:
+SkipMainLoop:
 
 
     free(GameGrid_Current);
     free(GameGrid_Next);
 
-    SDL_DestroySurface(TextSurface_Controls);
-    SDL_DestroyTexture(TextTexture_Controls);
-
-CloseTTFFonts:
+    TTF_DestroyText(TextObjControls);
 
     TTF_CloseFont(Font_JetBrainsMonoRegular);
 
-DestroySDLRenderers:
+    TTF_DestroyRendererTextEngine(RendererTextEngine);
+
+DestroySDLRendererAndWindow:
 
     SDL_DestroyRenderer(Renderer);
     SDL_DestroyWindow(Window);
