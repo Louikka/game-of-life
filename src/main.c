@@ -5,36 +5,12 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
-#include "lib/grid.h"
+#include "lib/game_grid.h"
+#include "lib/game_state.h"
+#include "lib/text.h"
+#include "lib/timer.h"
 #include "lib/draw.h"
-
-
-
-// in seconds
-#define GAME_MIN_GENERATION_TIME 0.01f
-#define GAME_MAX_GENERATION_TIME 1f
-
-
-typedef struct
-{
-    float Active;
-    Uint64 SinceLastFrame;
-} Timer;
-
-
-static SDL_Surface *CreateTextSurface(TTF_Font *Font, const char *Text,
-                                      SDL_Color Color, SDL_Rect *TextRect)
-{
-    TextRect->x = 0;
-    TextRect->y = 0;
-
-    TTF_GetStringSize(Font, Text, 0, &TextRect->w, &TextRect->h);
-
-    return TTF_RenderText_Blended(Font, Text, 0, Color);
-}
-
-
-
+#include "lib/presets.h"
 
 
 int main()
@@ -109,6 +85,8 @@ int main()
             "Window size: %dx%d.\n",
             WindowRect.w, WindowRect.h
         );
+
+        CalculateGameGridDimensions(WindowRect);
     }
 
 
@@ -124,62 +102,19 @@ int main()
             SDL_GetError()
         );
     }
-
-
-    TTF_Font *Font_JetBrainsMonoRegular = TTF_OpenFont("JetBrainsMono-Regular.ttf", 16);
-    if (Font_JetBrainsMonoRegular == NULL)
+    else
     {
-        SDL_LogError(
-            SDL_LOG_CATEGORY_APPLICATION,
-            "Failed to open a font : %s\n",
-            SDL_GetError()
-        );
+        LoadFonts();
+        CreateTextObjects(RendererTextEngine);
     }
 
 
-    TTF_Text *TextObjControls = TTF_CreateText(
-        RendererTextEngine,
-        Font_JetBrainsMonoRegular,
-        "Press Space to start/stop the simulation. Press c to clear game grid. "
-        "Press q or Esc to exit.",
-        0
-    );
 
-    TTF_SetTextColor(TextObjControls, 255, 255, 255, 255);
+    /* Grid initialisation ***************************************************/
 
-
-
-    /* Game initialisation ***************************************************/
-
-    GAME_GRID_WIDTH = WindowRect.w / CELL_SIZE;
-    GAME_GRID_HEIGHT = WindowRect.h / CELL_SIZE;
-
-    if (GAME_GRID_WIDTH <= 0 || GAME_GRID_HEIGHT <= 0)
+    const bool ok = InitGameGrid();
+    if (!ok)
     {
-        SDL_LogError(
-            SDL_LOG_CATEGORY_SYSTEM,
-            "Failed to figure out the game grid size.\n"
-        );
-    }
-
-    TOTAL_GRID_SIZE = GAME_GRID_WIDTH * GAME_GRID_HEIGHT;
-
-    SDL_Log(
-        "Size of the game world : %dx%d. Total amount of cells in grid : %d\n",
-        GAME_GRID_WIDTH, GAME_GRID_HEIGHT,
-        TOTAL_GRID_SIZE
-    );
-
-    CellState *GameGrid_Current = (CellState *)calloc(TOTAL_GRID_SIZE, sizeof(CellState));
-    CellState *GameGrid_Next = (CellState *)calloc(TOTAL_GRID_SIZE, sizeof(CellState));
-
-    if (GameGrid_Current == NULL || GameGrid_Next == NULL)
-    {
-        SDL_LogError(
-            SDL_LOG_CATEGORY_SYSTEM,
-            "Failed to allocate memory for game grids.\n"
-        );
-
         goto SkipMainLoop;
     }
 
@@ -187,21 +122,22 @@ int main()
 
     /* Main game loop ********************************************************/
 
-    bool IsGamePaused = true;
+    GOL_GameState GameState = {
+        .IsGamePaused = true,
+        .GenerationLiveTime = 0.1,
+        .TotalGenerations = 0,
+    };
 
-    /** Basically, speed of the game (in seconds). */
-    float GenerationLiveTime = 0.1;
-    unsigned int TotalGenerations = 0;
-
-    Timer Timer = {
+    GOL_GameTimer Timer = {
+        .Ticks = SDL_GetTicksNS(),
         .Active = 0,
-        .SinceLastFrame = SDL_GetTicksNS(),
     };
 
     while (true)
     {
-        SDL_Event event;
+        UpdateTimer(&Timer);
 
+        SDL_Event event;
         while (SDL_PollEvent(&event))
         {
             switch (event.type)
@@ -232,6 +168,7 @@ int main()
                             ToggleCellState(GameGrid_Current, pos);
                         }
                     }
+
                     break;
                 }
 
@@ -240,14 +177,14 @@ int main()
                     // Space button press — run/pause simulation.
                     if (event.key.key == SDLK_SPACE && !event.key.repeat)
                     {
-                        if (IsGamePaused)
+                        if (GameState.IsGamePaused)
                         {
-                            IsGamePaused = false;
+                            GameState.IsGamePaused = false;
                             Timer.Active = 0;
                         }
                         else
                         {
-                            IsGamePaused = true;
+                            GameState.IsGamePaused = true;
                         }
                     }
                     // Escape/Q — quit
@@ -276,8 +213,8 @@ int main()
                     // G — draw a glider
                     else if (event.key.key == SDLK_G)
                     {
-                        DrawGosperGliderGun(GameGrid_Current,
-                                            (SDL_Point){ .x = 10, .y = 10 });
+                        Preset_GosperGliderGun(GameGrid_Current,
+                                               (SDL_Point){ .x = 10, .y = 10 });
                     }
 
                     break;
@@ -285,48 +222,12 @@ int main()
             }
         }
 
+        DrawCurrentFrame(Renderer, GameState);
 
-        Uint64 CurrentFrameTime = SDL_GetTicksNS();
-        float Delta = (float)(CurrentFrameTime - Timer.SinceLastFrame) / (float)SDL_NS_PER_SECOND;
-        Timer.SinceLastFrame = CurrentFrameTime;
-        Timer.Active += Delta;
-
-
-        SDL_SetRenderDrawColor(Renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-        SDL_RenderClear(Renderer);
-
-        SDL_SetRenderDrawColor(Renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-
-        for (int i = 0; i < TOTAL_GRID_SIZE; i++)
-        {
-            SDL_Point pos = GetCellPosition(i);
-
-            if (IsCellAlive(GameGrid_Current, pos))
-            {
-                SDL_FRect rect = {
-                    .x = pos.x * CELL_SIZE,
-                    .y = pos.y * CELL_SIZE,
-                    .w = CELL_SIZE,
-                    .h = CELL_SIZE,
-                };
-
-                SDL_RenderFillRect(Renderer, &rect);
-            }
-        }
-
-        if (IsGamePaused)
-        {
-            TTF_DrawRendererText(TextObjControls, 20, 20);
-        }
-
-        SDL_RenderPresent(Renderer);
-
-
-        if (!IsGamePaused && Timer.Active > GenerationLiveTime)
+        if (!GameState.IsGamePaused && Timer.Active > GameState.GenerationLiveTime)
         {
             UpdateGrid(GameGrid_Current, GameGrid_Next);
-            TotalGenerations++;
-
+            GameState.TotalGenerations++;
             Timer.Active = 0;
         }
 
@@ -337,16 +238,10 @@ MainLoopEnd:
 SkipMainLoop:
 
 
-    free(GameGrid_Current);
-    free(GameGrid_Next);
-
-    TTF_DestroyText(TextObjControls);
-
-    TTF_CloseFont(Font_JetBrainsMonoRegular);
+    DestroyTextObjects();
+    CloseFonts();
 
     TTF_DestroyRendererTextEngine(RendererTextEngine);
-
-DestroySDLRendererAndWindow:
 
     SDL_DestroyRenderer(Renderer);
     SDL_DestroyWindow(Window);

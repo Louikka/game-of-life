@@ -1,12 +1,14 @@
-#ifndef GAME_OF_LIFE_GRID_H
-#define GAME_OF_LIFE_GRID_H
+#ifndef GAME_OF_LIFE_GAME_GRID_H
+#define GAME_OF_LIFE_GAME_GRID_H
 
 
 
 #define CELL_SIZE 10 // In pixels.
 
 
-/** `DEAD` = 0, `ALIVE` = 1. */
+/**
+ * `DEAD` = 0, `ALIVE` = 1.
+ */
 typedef char CellState;
 
 // two possible states of cell
@@ -17,15 +19,26 @@ typedef char CellState;
 /**
  * Game grid dimension (width).
  */
-extern int GAME_GRID_WIDTH;
+extern int GameGridWidth;
 /**
  * Game grid dimension (height).
  */
-extern int GAME_GRID_HEIGHT;
+extern int GameGridHeight;
+
 /**
- * Total amount of cells in grid.
+ * @returns Total grid size as int, or 0 on failure.
  */
-extern int TOTAL_GRID_SIZE;
+int CalculateGameGridDimensions(SDL_Rect WindowRect);
+
+
+extern CellState *GameGrid_Current;
+extern CellState *GameGrid_Next;
+
+/**
+ * @returns `true` on success, `false` on failure.
+ */
+bool InitGameGrid();
+
 
 
 /**

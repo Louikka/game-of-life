@@ -3,7 +3,7 @@
 
 
 
-void DrawGosperGliderGun(CellState *grid, SDL_Point pos);
+void DrawCurrentFrame(SDL_Renderer *r, GOL_GameState gs);
 
 
 

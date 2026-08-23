@@ -1,64 +1,43 @@
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
-#include "grid.h"
+#include "game_grid.h"
+#include "game_state.h"
+#include "text.h"
 
 #include "draw.h"
 
 
-
-void DrawGosperGliderGun(CellState *grid, SDL_Point pos)
+void DrawCurrentFrame(SDL_Renderer *r, GOL_GameState gs)
 {
-    // https://en.wikipedia.org/wiki/Gun_(cellular_automaton)
+    const int TOTAL_GRID_SIZE = GameGridWidth * GameGridHeight;
 
-    SDL_Rect BoundRect = {
-        .x = pos.x,
-        .y = pos.y,
-        .w = 38,
-        .h = 11,
-    };
+    SDL_SetRenderDrawColor(r, 0, 0, 0, SDL_ALPHA_OPAQUE);
+    SDL_RenderClear(r);
 
-    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 1 + pos.y }, ALIVE);
+    SDL_SetRenderDrawColor(r, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
-    SetCellState(grid, (SDL_Point){ .x = 23 + pos.x, .y = 2 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 2 + pos.y }, ALIVE);
+    for (int i = 0; i < TOTAL_GRID_SIZE; i++)
+    {
+        SDL_Point pos = GetCellPosition(i);
 
-    SetCellState(grid, (SDL_Point){ .x = 13 + pos.x, .y = 3 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 14 + pos.x, .y = 3 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 3 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 3 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 35 + pos.x, .y = 3 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 36 + pos.x, .y = 3 + pos.y }, ALIVE);
+        if (IsCellAlive(GameGrid_Current, pos))
+        {
+            SDL_FRect rect = {
+                .x = pos.x * CELL_SIZE,
+                .y = pos.y * CELL_SIZE,
+                .w = CELL_SIZE,
+                .h = CELL_SIZE,
+            };
 
-    SetCellState(grid, (SDL_Point){ .x = 12 + pos.x, .y = 4 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 16 + pos.x, .y = 4 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 4 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 4 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 35 + pos.x, .y = 4 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 36 + pos.x, .y = 4 + pos.y }, ALIVE);
+            SDL_RenderFillRect(r, &rect);
+        }
+    }
 
-    SetCellState(grid, (SDL_Point){ .x = 1 + pos.x, .y = 5 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 2 + pos.x, .y = 5 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 5 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 5 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 21 + pos.x, .y = 5 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 22 + pos.x, .y = 5 + pos.y }, ALIVE);
+    if (gs.IsGamePaused)
+    {
+        TTF_DrawRendererText(TextObj_Controls, 20, 20);
+    }
 
-    SetCellState(grid, (SDL_Point){ .x = 1 + pos.x, .y = 6 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 2 + pos.x, .y = 6 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 6 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 15 + pos.x, .y = 6 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 6 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 18 + pos.x, .y = 6 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 23 + pos.x, .y = 6 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 6 + pos.y }, ALIVE);
-
-    SetCellState(grid, (SDL_Point){ .x = 11 + pos.x, .y = 7 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 17 + pos.x, .y = 7 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 25 + pos.x, .y = 7 + pos.y }, ALIVE);
-
-    SetCellState(grid, (SDL_Point){ .x = 12 + pos.x, .y = 8 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 16 + pos.x, .y = 8 + pos.y }, ALIVE);
-
-    SetCellState(grid, (SDL_Point){ .x = 13 + pos.x, .y = 9 + pos.y }, ALIVE);
-    SetCellState(grid, (SDL_Point){ .x = 14 + pos.x, .y = 9 + pos.y }, ALIVE);
+    SDL_RenderPresent(r);
 }
