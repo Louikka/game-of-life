@@ -26,10 +26,8 @@ PRIVATE
     SDL3_ttf::SDL3_ttf
 )
 
-target_compile_options(game
-PRIVATE
-    -O2 -s
-)
+target_compile_options(game PRIVATE -Wall -O2 -s)
+target_link_options(game PRIVATE -static)
 
 
 add_custom_command(
