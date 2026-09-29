@@ -3,7 +3,6 @@
 #include "game_grid.h"
 
 
-
 int GameGridWidth = 0;
 int GameGridHeight = 0;
 
@@ -14,22 +13,9 @@ int CalculateGameGridDimensions(const SDL_Rect WindowRect)
 
     int TotalGridSize = 0;
 
-    if (GameGridWidth <= 0 || GameGridHeight <= 0)
-    {
-        SDL_LogError(
-            SDL_LOG_CATEGORY_SYSTEM,
-            "Failed to figure out the game grid size.\n"
-        );
-    }
-    else
+    if (GameGridWidth >= 0 && GameGridHeight >= 0)
     {
         TotalGridSize = GameGridWidth * GameGridHeight;
-
-        SDL_Log(
-            "Size of the game world : %dx%d. Total amount of cells in grid : %d\n",
-            GameGridWidth, GameGridHeight,
-            TotalGridSize
-        );
     }
 
     return TotalGridSize;

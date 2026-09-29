@@ -26,7 +26,7 @@ extern int GameGridWidth;
 extern int GameGridHeight;
 
 /**
- * @returns Total grid size as int, or 0 on failure.
+ * @returns Total grid size as int, 0 on failure.
  */
 int CalculateGameGridDimensions(SDL_Rect WindowRect);
 

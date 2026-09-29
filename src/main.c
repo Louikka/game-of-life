@@ -5,12 +5,12 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
-#include "lib/game_grid.h"
-#include "lib/game_state.h"
-#include "lib/text.h"
 #include "lib/timer.h"
-#include "lib/draw.h"
-#include "lib/presets.h"
+#include "game_grid.h"
+#include "game_state.h"
+#include "text.h"
+#include "draw.h"
+#include "presets.h"
 
 
 int main()
@@ -86,7 +86,22 @@ int main()
             WindowRect.w, WindowRect.h
         );
 
-        CalculateGameGridDimensions(WindowRect);
+        int size = CalculateGameGridDimensions(WindowRect);
+        if (size == 0)
+        {
+            SDL_LogError(
+                SDL_LOG_CATEGORY_SYSTEM,
+                "Failed to figure out the game grid size.\n"
+            );
+        }
+        else
+        {
+            SDL_Log(
+                "Size of the game world : %dx%d. Total amount of cells in grid : %d\n",
+                GameGridWidth, GameGridHeight, size
+            );
+        }
+
     }
 
 

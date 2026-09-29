@@ -16,12 +16,11 @@ add_executable(game WIN32)
 target_sources(game
 PRIVATE
     src/main.c
-    src/lib/game_grid.c
-    src/lib/game_state.c
-    src/lib/text.c
+    src/game_grid.c
+    src/text.c
+    src/draw.c
+    src/presets.c
     src/lib/timer.c
-    src/lib/draw.c
-    src/lib/presets.c
 )
 
 target_link_libraries(game
