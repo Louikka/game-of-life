@@ -3,10 +3,6 @@ cmake_minimum_required(VERSION 4.1)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/bin/debug)
 
-if(WIN32)
-    #set(VCPKG_TARGET_TRIPLET x64-windows-static)
-endif()
-
 
 project(GameOfLife)
 
